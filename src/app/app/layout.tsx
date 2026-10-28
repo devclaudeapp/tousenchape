@@ -2,11 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { Navigation } from "@/components/navigation";
+import { MemoryStore } from "@/lib/data/memory-store";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/connexion");
   if (!session.membre) redirect("/bienvenue");
+  const membresDemo = session.demo ? (await new MemoryStore().membres()).filter((m) => m.actif) : [];
 
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
@@ -21,7 +23,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Navigation role={session.membre.role} />
         <div className="mt-auto hidden border-t border-stone-100 px-4 py-3 text-xs text-stone-500 lg:block">
           <div className="truncate font-medium text-stone-700">{session.entreprise.nom}</div>
-          <div className="truncate">{session.membre.nom}</div>
+          {session.demo ? (
+            <form action="/demo/role" method="get" className="mt-1">
+              <label htmlFor="membre" className="sr-only">Voir l&apos;application comme</label>
+              <select id="membre" name="membre" defaultValue={session.membre.id} className="champ py-1 text-xs" aria-label="Voir l'application comme">
+                {membresDemo.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nom} · {({ gerant: "gérant", bureau: "bureau", chef_equipe: "chef d'équipe", applicateur: "applicateur" } as const)[m.role]}
+                  </option>
+                ))}
+              </select>
+              <button type="submit" className="mt-1 text-brand-700 underline-offset-2 hover:underline">Changer de rôle</button>
+            </form>
+          ) : (
+            <div className="truncate">{session.membre.nom}</div>
+          )}
           <form action="/deconnexion" method="post" className="mt-2">
             <button type="submit" className="text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline">
               Se déconnecter

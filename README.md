@@ -11,6 +11,8 @@ npm run dev
 
 Ouvrez <http://localhost:3000> et cliquez sur **Ouvrir la démonstration**. Sans configuration Supabase, l'application tourne avec une entreprise fictive (Rhône Chapes Fluides) et des données en mémoire, persistées dans le dossier temporaire du système. Tout le parcours est utilisable : devis → envoi → signature → chantier → visite technique → coulage → bons de livraison → fiche de traçabilité → factures.
 
+En bas du menu, **Changer de rôle** permet de voir l'application comme le gérant, le bureau, un chef d'équipe ou un applicateur : chacun a son premier écran et ses droits.
+
 ## Ce que fait la version actuelle (MVP)
 
 | Module | Contenu |
@@ -19,10 +21,15 @@ Ouvrez <http://localhost:3000> et cliquez sur **Ouvrir la démonstration**. Sans
 | Chantiers | Un devis signé devient un chantier. Planification (date, premier camion, centrale, produit, chef d'équipe **titulaire du CQP**, obligatoire), visite technique en checklist (un point bloquant non conforme interdit le passage « Prêt à couler »), coulage, saisie des toupies avec contrôle de l'étalement (plage du produit, perte > 20 %), de l'eau ajoutée et du temps d'utilisation, jalons automatiques après coulage, séchage estimé et seuil d'humidité CM. |
 | Traçabilité QB46 | Fiche § 18 des Règles professionnelles générée sans ressaisie, avec les champs manquants signalés, en PDF signé par le chef d'équipe. |
 | Facturation | Acompte, solde avec déduction des acomptes, retenue de garantie 5 %, autoliquidation, mentions légales, encaissements, encours et retards. |
-| Planning | Quatre semaines de coulages par jour, conflits d'équipe signalés. |
-| Paramètres | Entreprise et assurance décennale, grille tarifaire, équipe et CQP, produits et centrales. |
+| Planning | Semaine par équipe, chantiers déplacés par **glisser-déposer** (jour, équipe), charge en m² par jour contre la capacité de l'équipe, absences affichées, refus si le chef de l'équipe cible n'a pas le CQP, avertissement si le chef est absent. |
+| Équipe | Fiche compagnon (contrat, équipe, CQP chapiste, téléphone), **habilitations** avec date de fin calculée (carte BTP, CACES, AIPR, SST, visite médicale, permis…) et alertes à 60 jours, **absences** (congé, maladie, formation), équipes avec chef, couleur et capacité, renforts du jour sur un chantier. |
+| Ma journée | Premier écran du chef d'équipe et de l'applicateur, sur téléphone : chantiers du jour et du lendemain, itinéraire, heure du premier camion, accès, appel du client, visite technique ou saisie de toupie en un appui, coéquipiers présents ou absents. |
+| Fil de chantier | Messages et photos (compressées sur le téléphone) par chantier, datés et attribués ; un **signalement** remonte dans les alertes du patron jusqu'à son traitement. |
+| Alertes patron | Sur le tableau de bord : habilitations et décennale qui expirent, chantier sans chef CQP ou avec un chef absent, visite technique manquante à J-2, factures en retard, signalements du terrain. |
+| Droits | Gérant et bureau : tout ; chef d'équipe : devis en lecture, chantiers, planning, son équipe ; applicateur : ses chantiers, sa fiche. Les prix d'achat et marges ne sortent pas du bureau. |
+| Paramètres | Entreprise et assurance décennale, grille tarifaire, produits et centrales. |
 
-Le cœur métier est un module TypeScript pur, `src/lib/chape/`, couvert par 88 tests (`npm test`) :
+Le cœur métier est un module TypeScript pur, `src/lib/chape/`, couvert avec `src/lib/domain/` par 98 tests (`npm test`) :
 
 - `epaisseurs.ts` : minimums et maximums (RP Tableaux 4, 5 et 8, plancher chauffant § 12) ;
 - `volume.ts` : volume, toupies, film, bande, charge ;
@@ -31,11 +38,12 @@ Le cœur métier est un module TypeScript pur, `src/lib/chape/`, couvert par 88 
 - `tolerances.ts` : planéité, niveau, fissures ;
 - `livraison.ts` : contrôle d'une toupie ;
 - `tva.ts` : régime de TVA et mentions ;
-- `devis.ts` : chiffrage par lots et totaux.
+- `devis.ts` : chiffrage par lots et totaux ;
+- `domain/habilitations.ts` et `domain/alertes.ts` : validité des documents, alertes du patron, charge des équipes.
 
 ## Mettre en production avec Supabase
 
-1. Créez un projet Supabase (région UE), puis appliquez `supabase/migrations/0001_init.sql` et `supabase/seed.sql` (via `supabase db push` ou l'éditeur SQL).
+1. Créez un projet Supabase (région UE), puis appliquez `supabase/migrations/0001_init.sql`, `supabase/migrations/0002_equipes.sql` et `supabase/seed.sql` (via `supabase db push` ou l'éditeur SQL). La migration 0002 crée aussi le bucket privé `photos` pour le fil de chantier.
 2. Activez la connexion par e-mail (lien magique) dans Authentication, avec `https://votre-domaine/auth/callback` dans les URL de redirection.
 3. Copiez `.env.example` en `.env.local` et renseignez `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `NEXT_PUBLIC_APP_URL`.
 4. Déployez sur Vercel (région Paris) avec les mêmes variables.
@@ -58,4 +66,4 @@ npm run build      # build de production
 
 ## Feuille de route
 
-Le cahier des charges complet (marché, référentiel produits, cadre légal, modèle de données, V1 à V2) est tenu dans le document « Tous en chape — Cahier des charges ». Prochaines étapes : signature électronique par lien client, commande à la centrale (e-mail puis portail), contrôles mobiles hors ligne, Factur-X et plateforme agréée avant septembre 2027.
+Le cahier des charges complet (marché, référentiel produits, cadre légal, gestion des équipes par vague, modèle de données, V1 à V2) est tenu dans le document « Tous en chape — Cahier des charges ». Prochaines étapes : feuille d'heures géolocalisée et export des variables de paie, notifications push (après déploiement HTTPS), signature électronique par lien client, commande à la centrale (e-mail puis portail), contrôles mobiles hors ligne, Factur-X et plateforme agréée avant septembre 2027.

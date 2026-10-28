@@ -59,6 +59,7 @@ export async function changerStatutDevis(devisId: string, statut: Devis["statut"
       codePostal: devis.codePostalChantier,
       ville: devis.villeChantier,
       classementUPEC: devis.configuration.classeLocal,
+      surfacePrevueM2: devis.pieces.reduce((s, p) => s + p.surfaceM2, 0),
       notes: devis.objet,
     });
     revalidatePath("/app/chantiers");

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { getStore } from "@/lib/auth/session";
-import { fmtDate, fmtEuros, libelleLiant } from "@/lib/format";
-import { Badge, Carte, EnTete } from "@/components/ui";
+import { exiger } from "@/lib/auth/roles";
+import { fmtEuros, libelleLiant } from "@/lib/format";
+import { Carte, EnTete } from "@/components/ui";
 import { enregistrerEntreprise, enregistrerGrille } from "./actions";
 
 function Champ({ id, label, defaultValue, type = "text", step, lectureSeule }: { id: string; label: string; defaultValue?: string | number; type?: string; step?: string; lectureSeule: boolean }) {
@@ -17,6 +19,7 @@ export const metadata = { title: "Paramètres" };
 export default async function Parametres({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   const { ok } = await searchParams;
   const { session, store } = await getStore();
+  exiger(session, "parametres");
   const [entreprise, membres, produits, centrales] = await Promise.all([store.entreprise(), store.membres(), store.produits(), store.centrales()]);
   const g = entreprise.grilleTarifaire;
   const lectureSeule = session.membre.role !== "gerant";
@@ -80,40 +83,11 @@ export default async function Parametres({ searchParams }: { searchParams: Promi
         </form>
 
         <Carte titre="Équipe">
-          <table className="tableau">
-            <thead>
-              <tr>
-                <th>Nom</th>
-                <th>Rôle</th>
-                <th>Équipe</th>
-                <th>CQP chapiste</th>
-              </tr>
-            </thead>
-            <tbody>
-              {membres.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    {m.nom}
-                    <div className="text-xs text-stone-500">{m.email}</div>
-                  </td>
-                  <td className="capitalize">{m.role.replace("_", " ")}</td>
-                  <td>{m.equipe ?? "—"}</td>
-                  <td>
-                    {m.cqpNumero ? (
-                      <Badge classe="bg-brand-100 text-brand-800">
-                        {m.cqpNumero} · {fmtDate(m.cqpDate)}
-                      </Badge>
-                    ) : m.role === "chef_equipe" ? (
-                      <Badge classe="bg-rose-100 text-rose-800">Manquant</Badge>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-3 text-xs text-stone-500">Depuis le 1er août 2024, chaque chantier doit compter un chef d&apos;équipe titulaire du CQP chapiste. L&apos;invitation de nouveaux membres par e-mail arrive avec la connexion Supabase.</p>
+          <p className="text-sm text-stone-600">
+            {membres.filter((m) => m.actif).length} compagnons actifs, dont {membres.filter((m) => m.cqpNumero).length} titulaire{membres.filter((m) => m.cqpNumero).length > 1 ? "s" : ""} du CQP chapiste.
+          </p>
+          <Link href="/app/equipe" className="bouton-secondaire mt-3">Gérer les équipes, les fiches et les habilitations</Link>
+          <p className="mt-3 text-xs text-stone-500">L&apos;invitation de nouveaux membres par e-mail arrive avec la connexion Supabase.</p>
         </Carte>
 
         <Carte titre="Produits certifiés et centrales">

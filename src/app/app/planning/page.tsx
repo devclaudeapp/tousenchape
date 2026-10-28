@@ -1,74 +1,88 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getStore } from "@/lib/auth/session";
-import { fmtDateLongue, libelleStatutChantier } from "@/lib/format";
-import { Badge, EnTete, Vide } from "@/components/ui";
+import { estBureau, exiger } from "@/lib/auth/roles";
+import { EnTete } from "@/components/ui";
+import { PlanningEquipes } from "@/components/planning-equipes";
+import { deplacerChantier } from "./actions";
 
 export const metadata = { title: "Planning" };
 
-export default async function Planning() {
-  const { store } = await getStore();
-  const [chantiers, clients, membres, produits] = await Promise.all([store.chantiers(), store.clients(), store.membres(), store.produits()]);
+function lundiDe(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  const jour = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - jour);
+  return d.toISOString().slice(0, 10);
+}
+function decaler(iso: string, jours: number) {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + jours);
+  return d.toISOString().slice(0, 10);
+}
 
-  const aujourdHui = new Date();
-  aujourdHui.setHours(0, 0, 0, 0);
-  const jours: Date[] = Array.from({ length: 28 }, (_, i) => new Date(aujourdHui.getTime() + i * 86400000));
-  const cle = (d: Date) => d.toISOString().slice(0, 10);
-  const planifies = chantiers.filter((c) => c.dateCoulage && !["facture", "clos"].includes(c.statut));
-  const sansDate = chantiers.filter((c) => !c.dateCoulage && !["facture", "clos"].includes(c.statut));
-
-  // Conflit : un même chef d'équipe sur deux chantiers le même jour.
-  const conflits = new Set<string>();
-  for (const a of planifies) for (const b of planifies) if (a.id !== b.id && a.chefEquipeId && a.chefEquipeId === b.chefEquipeId && a.dateCoulage === b.dateCoulage) conflits.add(a.id);
+export default async function Planning({ searchParams }: { searchParams: Promise<{ semaine?: string }> }) {
+  const { semaine } = await searchParams;
+  const { session, store } = await getStore();
+  exiger(session, "planning");
+  const aujourdHui = new Date().toISOString().slice(0, 10);
+  const debut = lundiDe(semaine && /^\d{4}-\d{2}-\d{2}$/.test(semaine) ? semaine : aujourdHui);
+  const [chantiers, clients, membres, produits, equipes, indisponibilites] = await Promise.all([
+    store.chantiers(),
+    store.clients(),
+    store.membres(),
+    store.produits(),
+    store.equipes(),
+    store.indisponibilites(),
+  ]);
+  const planifiables = chantiers.filter((c) => c.statut !== "clos" && c.statut !== "facture");
+  const sansDate = planifiables.filter((c) => !c.dateCoulage);
+  const fmt = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
 
   return (
     <>
-      <EnTete titre="Planning des coulages" sousTitre="Quatre semaines à venir, par jour. Les conflits d'équipe sont signalés." />
+      <EnTete
+        titre="Planning des coulages"
+        sousTitre={`Semaine du ${fmt(debut)} au ${fmt(decaler(debut, 6))}`}
+        actions={
+          <>
+            <Link href={`/app/planning?semaine=${decaler(debut, -7)}`} className="bouton-secondaire" aria-label="Semaine précédente">
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link href="/app/planning" className="bouton-secondaire">
+              Cette semaine
+            </Link>
+            <Link href={`/app/planning?semaine=${decaler(debut, 7)}`} className="bouton-secondaire" aria-label="Semaine suivante">
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </>
+        }
+      />
       {sansDate.length > 0 && (
         <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          {sansDate.length} chantier{sansDate.length > 1 ? "s" : ""} sans date de coulage :{" "}
+          À planifier :{" "}
           {sansDate.map((c, i) => (
             <span key={c.id}>
               {i > 0 && ", "}
-              <Link href={`/app/chantiers/${c.id}`} className="underline">{c.numero}</Link>
+              <Link href={`/app/chantiers/${c.id}`} className="underline">
+                {c.numero}
+              </Link>
+              {c.surfacePrevueM2 ? ` (${c.surfacePrevueM2} m²)` : ""}
             </span>
           ))}
         </p>
       )}
-      {planifies.length === 0 ? (
-        <Vide titre="Aucun coulage planifié" />
-      ) : (
-        <div className="grid gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          {jours.map((j) => {
-            const k = cle(j);
-            const duJour = planifies.filter((c) => c.dateCoulage === k);
-            const weekend = j.getDay() === 0 || j.getDay() === 6;
-            return (
-              <div key={k} className={`min-h-28 p-2 ${weekend ? "bg-stone-50" : "bg-white"}`}>
-                <div className={`mb-1 text-xs font-medium ${k === cle(aujourdHui) ? "text-brand-700" : "text-stone-500"}`}>
-                  {fmtDateLongue(j.toISOString()).replace(/ \d{4}$/, "")}
-                </div>
-                <ul className="space-y-1">
-                  {duJour.map((c) => (
-                    <li key={c.id}>
-                      <Link href={`/app/chantiers/${c.id}`} className={`block rounded border px-2 py-1 text-xs hover:bg-stone-50 ${conflits.has(c.id) ? "border-rose-300 bg-rose-50" : "border-stone-200"}`}>
-                        <div className="font-medium text-stone-900">{c.heurePremierCamion ?? "—"} · {clients.find((x) => x.id === c.clientId)?.nom}</div>
-                        <div className="text-stone-500">
-                          {c.ville} · {produits.find((p) => p.id === c.produitId)?.nom ?? "produit ?"}
-                        </div>
-                        <div className="mt-1 flex items-center justify-between gap-1">
-                          <span className={c.chefEquipeId ? "text-stone-600" : "text-rose-700"}>{membres.find((m) => m.id === c.chefEquipeId)?.nom ?? "équipe ?"}</span>
-                          <Badge classe={libelleStatutChantier[c.statut].classe}>{libelleStatutChantier[c.statut].label}</Badge>
-                        </div>
-                        {conflits.has(c.id) && <div className="mt-1 text-rose-700">Équipe déjà affectée ce jour</div>}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <PlanningEquipes
+        semaineDebut={debut}
+        equipes={equipes}
+        chantiers={planifiables}
+        membres={membres}
+        indisponibilites={indisponibilites}
+        clients={clients}
+        produits={produits}
+        peutDeplacer={estBureau(session) || session.membre.role === "chef_equipe"}
+        aujourdHui={aujourdHui}
+        deplacer={deplacerChantier}
+      />
     </>
   );
 }

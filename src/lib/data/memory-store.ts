@@ -8,9 +8,12 @@ import type {
   Controle,
   Devis,
   Entreprise,
+  Equipe,
   Facture,
+  Indisponibilite,
   LivraisonBon,
   Membre,
+  Message,
   Produit,
 } from "@/lib/domain/types";
 import {
@@ -21,9 +24,12 @@ import {
   demoControles,
   demoDevis,
   demoEntreprise,
+  demoEquipes,
   demoFactures,
+  demoIndisponibilites,
   demoLivraisons,
   demoMembres,
+  demoMessages,
   demoProduits,
 } from "./demo-data";
 import { numeroSuivant, type DataStore } from "./store";
@@ -44,6 +50,9 @@ interface Etat {
   livraisons: LivraisonBon[];
   controles: Controle[];
   factures: Facture[];
+  equipes: Equipe[];
+  indisponibilites: Indisponibilite[];
+  messages: Message[];
 }
 
 const clone = <T>(x: T): T => structuredClone(x);
@@ -60,6 +69,9 @@ function etatInitial(): Etat {
     livraisons: demoLivraisons,
     controles: demoControles,
     factures: demoFactures,
+    equipes: demoEquipes,
+    indisponibilites: demoIndisponibilites,
+    messages: demoMessages,
   });
 }
 
@@ -116,6 +128,78 @@ export class MemoryStore implements DataStore {
   }
   async membres() {
     return clone(etat().membres);
+  }
+  async membre(mid: string) {
+    return clone(etat().membres.find((m) => m.id === mid) ?? null);
+  }
+  async creerMembre(data: Omit<Membre, "id" | "entrepriseId">) {
+    const m: Membre = { ...data, id: id(), entrepriseId: this.entrepriseId };
+    etat().membres.push(m);
+    persister();
+    return clone(m);
+  }
+  async mettreAJourMembre(mid: string, patch: Partial<Membre>) {
+    const e = etat();
+    const i = e.membres.findIndex((m) => m.id === mid);
+    if (i < 0) throw new Error("Membre introuvable.");
+    e.membres[i] = { ...e.membres[i]!, ...patch, id: mid };
+    persister();
+    return clone(e.membres[i]!);
+  }
+
+  async equipes() {
+    return clone(etat().equipes);
+  }
+  async creerEquipe(data: Omit<Equipe, "id" | "entrepriseId">) {
+    const eq: Equipe = { ...data, id: id(), entrepriseId: this.entrepriseId };
+    etat().equipes.push(eq);
+    persister();
+    return clone(eq);
+  }
+  async mettreAJourEquipe(eid: string, patch: Partial<Equipe>) {
+    const e = etat();
+    const i = e.equipes.findIndex((x) => x.id === eid);
+    if (i < 0) throw new Error("Équipe introuvable.");
+    e.equipes[i] = { ...e.equipes[i]!, ...patch, id: eid };
+    persister();
+    return clone(e.equipes[i]!);
+  }
+
+  async indisponibilites() {
+    return clone(etat().indisponibilites).sort((a, b) => a.debut.localeCompare(b.debut));
+  }
+  async creerIndisponibilite(data: Omit<Indisponibilite, "id" | "entrepriseId" | "createdAt">) {
+    const ind: Indisponibilite = { ...data, id: id(), entrepriseId: this.entrepriseId, createdAt: maintenant() };
+    etat().indisponibilites.push(ind);
+    persister();
+    return clone(ind);
+  }
+  async supprimerIndisponibilite(iid: string) {
+    const e = etat();
+    e.indisponibilites = e.indisponibilites.filter((x) => x.id !== iid);
+    persister();
+  }
+
+  async messages(chantierId?: string) {
+    return clone(etat().messages.filter((m) => !chantierId || m.chantierId === chantierId)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+  async creerMessage(data: Omit<Message, "id" | "entrepriseId" | "createdAt">) {
+    const m: Message = { ...data, id: id(), entrepriseId: this.entrepriseId, createdAt: maintenant() };
+    etat().messages.push(m);
+    persister();
+    return clone(m);
+  }
+  async mettreAJourMessage(mid: string, patch: Partial<Message>) {
+    const e = etat();
+    const i = e.messages.findIndex((m) => m.id === mid);
+    if (i < 0) throw new Error("Message introuvable.");
+    e.messages[i] = { ...e.messages[i]!, ...patch, id: mid };
+    persister();
+    return clone(e.messages[i]!);
+  }
+  async enregistrerPhoto(dataUrl: string) {
+    // En démo, la photo compressée reste inline.
+    return dataUrl;
   }
 
   async clients() {

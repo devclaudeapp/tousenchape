@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Plus } from "lucide-react";
 import { getStore } from "@/lib/auth/session";
+import { exiger } from "@/lib/auth/roles";
 import { chiffrerDevisEnregistre } from "@/lib/domain/chiffrage";
 import { fmtDate, fmtEuros, libelleStatutChantier, libelleStatutDevis, libelleStatutFacture, libelleTypeClient, libelleTypeFacture } from "@/lib/format";
 import { Badge, Carte, Definition, EnTete, Vide } from "@/components/ui";
@@ -12,6 +13,7 @@ export default async function FicheClient({ params, searchParams }: { params: Pr
   const { id } = await params;
   const { modifier } = await searchParams;
   const { session, store } = await getStore();
+  exiger(session, "clients");
   const client = await store.client(id);
   if (!client) notFound();
   const [devis, chantiers, factures, produits] = await Promise.all([store.devisListe(), store.chantiers(), store.factures(), store.produits()]);

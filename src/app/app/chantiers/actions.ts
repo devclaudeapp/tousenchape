@@ -15,10 +15,15 @@ const nombre = (s: FormDataEntryValue | null) => (vide(s) !== undefined ? Number
 
 export async function planifierChantier(chantierId: string, formData: FormData) {
   const { store } = await getStore();
-  const membres = await store.membres();
-  const chefEquipeId = vide(formData.get("chefEquipeId"));
+  const [membres, equipes, chantierActuel] = await Promise.all([store.membres(), store.equipes(), store.chantier(chantierId)]);
+  const equipeId = vide(formData.get("equipeId"));
+  const equipe = equipes.find((e) => e.id === equipeId);
+  // Sans chef choisi, le chef de l'équipe prend le chantier.
+  const chefEquipeId = vide(formData.get("chefEquipeId")) ?? equipe?.chefId;
   const chef = membres.find((m) => m.id === chefEquipeId);
   const dateCoulage = vide(formData.get("dateCoulage"));
+  const renfortNom = vide(formData.get("renfortNom"));
+  const renforts = renfortNom ? [...(chantierActuel?.renforts ?? []), { nom: renfortNom, origine: vide(formData.get("renfortOrigine")) }] : chantierActuel?.renforts;
 
   // Règle CQP : un coulage ne se planifie qu'avec un chef d'équipe titulaire du CQP chapiste (obligatoire depuis le 1er août 2024).
   if (dateCoulage && chef && !chef.cqpNumero) {
@@ -28,7 +33,9 @@ export async function planifierChantier(chantierId: string, formData: FormData) 
   const patch: Partial<Chantier> = {
     dateCoulage,
     heurePremierCamion: vide(formData.get("heurePremierCamion")),
+    equipeId,
     chefEquipeId,
+    renforts,
     centraleId: vide(formData.get("centraleId")),
     produitId: vide(formData.get("produitId")),
     accesCamion: vide(formData.get("accesCamion")),

@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getStore } from "@/lib/auth/session";
+import { exiger } from "@/lib/auth/roles";
 import { libelleTypeClient } from "@/lib/format";
 import { Badge, EnTete, Vide } from "@/components/ui";
 
 export const metadata = { title: "Clients" };
 
 export default async function Clients() {
-  const { store } = await getStore();
+  const { session, store } = await getStore();
+  exiger(session, "clients");
   const [clients, devis, chantiers] = await Promise.all([store.clients(), store.devisListe(), store.chantiers()]);
 
   return (

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getStore } from "@/lib/auth/session";
+import { exiger } from "@/lib/auth/roles";
 import { fmtDate, fmtEuros, libelleStatutFacture, libelleTypeFacture } from "@/lib/format";
 import { Badge, EnTete, Stat, Vide } from "@/components/ui";
 import { enregistrerPaiement } from "./actions";
@@ -8,7 +9,8 @@ export const metadata = { title: "Factures" };
 
 export default async function Factures({ searchParams }: { searchParams: Promise<{ nouvelle?: string }> }) {
   const { nouvelle } = await searchParams;
-  const { store } = await getStore();
+  const { session, store } = await getStore();
+  exiger(session, "factures");
   const [factures, clients, chantiers] = await Promise.all([store.factures(), store.clients(), store.chantiers()]);
   const aujourdHui = new Date().toISOString().slice(0, 10);
   const reste = (f: (typeof factures)[number]) => Math.round((f.totalTTC - f.paiements.reduce((s, p) => s + p.montant, 0)) * 100) / 100;

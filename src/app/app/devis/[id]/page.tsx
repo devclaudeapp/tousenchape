@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Download, Pencil, Send, PenLine, Copy } from "lucide-react";
 import { getStore } from "@/lib/auth/session";
+import { exiger } from "@/lib/auth/roles";
 import { chiffrerDevisEnregistre } from "@/lib/domain/chiffrage";
 import { limitesEpaisseur } from "@/lib/chape/epaisseurs";
 import { fmtDate, fmtEuros, fmtNombre, libelleLiant, libelleModePose, libelleRevetement, libelleStatutDevis } from "@/lib/format";
@@ -13,6 +14,7 @@ export default async function FicheDevis({ params, searchParams }: { params: Pro
   const { id } = await params;
   const { modifier, erreur } = await searchParams;
   const { session, store } = await getStore();
+  exiger(session, "devis");
   const devis = await store.devis(id);
   if (!devis) notFound();
   const [clients, produits, chantiers] = await Promise.all([store.clients(), store.produits(), store.chantiers()]);

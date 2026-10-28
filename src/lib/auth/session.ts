@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
-import { DEMO_ENTREPRISE_ID, demoEntreprise, demoMembres } from "@/lib/data/demo-data";
+import { DEMO_ENTREPRISE_ID, demoMembres } from "@/lib/data/demo-data";
 import { MemoryStore } from "@/lib/data/memory-store";
 import type { DataStore } from "@/lib/data/store";
 import { SupabaseStore } from "@/lib/data/supabase-store";
@@ -8,6 +8,8 @@ import type { Entreprise, Membre, Session } from "@/lib/domain/types";
 import { supabaseConfigure, supabaseServeur } from "@/lib/supabase/server";
 
 export const COOKIE_DEMO = "tec_demo";
+/** En démo, membre incarné (pour voir l'application comme le bureau ou un chef d'équipe). */
+export const COOKIE_DEMO_MEMBRE = "tec_demo_membre";
 
 /** Session de l'utilisateur courant, ou null. Mise en cache le temps d'une requête. */
 export const getSession = cache(async (): Promise<Session | null> => {
@@ -15,8 +17,11 @@ export const getSession = cache(async (): Promise<Session | null> => {
 
   if (!supabaseConfigure()) {
     if (cookieStore.get(COOKIE_DEMO)?.value !== "1") return null;
-    const membre = demoMembres[0]!;
-    return { userId: "demo-user", email: membre.email, membre, entreprise: demoEntreprise, demo: true };
+    const store = new MemoryStore();
+    const [membres, entreprise] = await Promise.all([store.membres(), store.entreprise()]);
+    const voulu = cookieStore.get(COOKIE_DEMO_MEMBRE)?.value;
+    const membre = membres.find((m) => m.id === voulu && m.actif) ?? membres.find((m) => m.id === demoMembres[0]!.id) ?? demoMembres[0]!;
+    return { userId: `demo-${membre.id}`, email: membre.email, membre, entreprise, demo: true };
   }
 
   const sb = await supabaseServeur();
@@ -39,9 +44,14 @@ export const getSession = cache(async (): Promise<Session | null> => {
       nom: membre.nom,
       email: membre.email,
       role: membre.role,
-      equipe: membre.equipe ?? undefined,
+      telephone: membre.telephone ?? undefined,
+      equipeId: membre.equipe_id ?? undefined,
+      typeContrat: membre.type_contrat ?? undefined,
+      dateEntree: membre.date_entree ?? undefined,
       cqpNumero: membre.cqp_numero ?? undefined,
       cqpDate: membre.cqp_date ?? undefined,
+      habilitations: membre.habilitations ?? [],
+      actif: membre.actif ?? true,
     },
     entreprise,
     demo: false,

@@ -6,9 +6,12 @@ import type {
   Controle,
   Devis,
   Entreprise,
+  Equipe,
   Facture,
+  Indisponibilite,
   LivraisonBon,
   Membre,
+  Message,
   Produit,
 } from "@/lib/domain/types";
 
@@ -47,13 +50,31 @@ export const demoEntreprise: Entreprise = {
   grilleTarifaire: GRILLE_DEMO,
 };
 
+export const demoEquipes: Equipe[] = [
+  { id: "eq-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Équipe 1", couleur: "#13836d", chefId: "m-chef-1", capaciteM2Jour: 300 },
+  { id: "eq-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Équipe 2", couleur: "#b45309", chefId: "m-chef-2", capaciteM2Jour: 250 },
+];
+
 export const demoMembres: Membre[] = [
-  { id: "m-gerant", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Thibault Rey", email: "demo@tousenchape.fr", role: "gerant" },
-  { id: "m-bureau", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Sophie Martin", email: "sophie@rhone-chapes.fr", role: "bureau" },
-  { id: "m-chef-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Karim Benali", email: "karim@rhone-chapes.fr", role: "chef_equipe", equipe: "Équipe 1", cqpNumero: "CH-2024-0871", cqpDate: "2024-06-12" },
-  { id: "m-chef-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Lucas Perrin", email: "lucas@rhone-chapes.fr", role: "chef_equipe", equipe: "Équipe 2" },
-  { id: "m-app-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Mehdi Saïdi", email: "mehdi@rhone-chapes.fr", role: "applicateur", equipe: "Équipe 1" },
-  { id: "m-app-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Antoine Garcia", email: "antoine@rhone-chapes.fr", role: "applicateur", equipe: "Équipe 2" },
+  { id: "m-gerant", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Thibault Rey", email: "demo@tousenchape.fr", telephone: "06 00 00 00 01", role: "gerant", typeContrat: "gerant", dateEntree: "2015-03-01", actif: true, habilitations: [{ id: "h-g1", type: "carte_btp", numero: "BTP-0001", dateFin: jour(400) }, { id: "h-g2", type: "permis_be" }] },
+  { id: "m-bureau", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Sophie Martin", email: "sophie@rhone-chapes.fr", telephone: "04 72 00 00 01", role: "bureau", typeContrat: "cdi", dateEntree: "2019-09-02", actif: true, habilitations: [] },
+  { id: "m-chef-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Karim Benali", email: "karim@rhone-chapes.fr", telephone: "06 00 00 00 02", role: "chef_equipe", equipeId: "eq-1", typeContrat: "cdi", dateEntree: "2017-04-10", cqpNumero: "CH-2024-0871", cqpDate: "2024-06-12", actif: true, habilitations: [{ id: "h-k1", type: "carte_btp", numero: "BTP-0002", dateFin: jour(700) }, { id: "h-k2", type: "pompe_chape" }, { id: "h-k3", type: "sst", dateFin: jour(25) }, { id: "h-k4", type: "permis_be" }, { id: "h-k5", type: "visite_medicale", dateFin: jour(300) }] },
+  { id: "m-chef-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Lucas Perrin", email: "lucas@rhone-chapes.fr", telephone: "06 00 00 00 03", role: "chef_equipe", equipeId: "eq-2", typeContrat: "cdi", dateEntree: "2021-02-15", actif: true, notes: "CQP chapiste : session prévue au printemps.", habilitations: [{ id: "h-l1", type: "carte_btp", numero: "BTP-0003", dateFin: jour(900) }, { id: "h-l2", type: "pompe_chape" }, { id: "h-l3", type: "permis_b" }, { id: "h-l4", type: "visite_medicale", dateFin: jour(-12) }] },
+  { id: "m-app-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Mehdi Saïdi", email: "mehdi@rhone-chapes.fr", telephone: "06 00 00 00 04", role: "applicateur", equipeId: "eq-1", typeContrat: "cdi", dateEntree: "2022-06-01", actif: true, habilitations: [{ id: "h-m1", type: "carte_btp", numero: "BTP-0004", dateFin: jour(1200) }, { id: "h-m2", type: "permis_b" }, { id: "h-m3", type: "aipr", dateFin: jour(48) }] },
+  { id: "m-app-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Antoine Garcia", email: "antoine@rhone-chapes.fr", telephone: "06 00 00 00 05", role: "applicateur", equipeId: "eq-2", typeContrat: "apprenti", dateEntree: "2025-09-01", actif: true, habilitations: [{ id: "h-a1", type: "carte_btp", numero: "BTP-0005", dateFin: jour(1500) }] },
+  { id: "m-app-3", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Yanis Kone", email: "yanis@rhone-chapes.fr", telephone: "06 00 00 00 06", role: "applicateur", equipeId: "eq-2", typeContrat: "cdd", dateEntree: "2026-03-02", actif: true, habilitations: [{ id: "h-y1", type: "carte_btp", numero: "BTP-0006", dateFin: jour(1600) }, { id: "h-y2", type: "permis_b" }] },
+];
+
+export const demoIndisponibilites: Indisponibilite[] = [
+  { id: "ind-1", entrepriseId: DEMO_ENTREPRISE_ID, membreId: "m-app-1", debut: jour(3), fin: jour(7), motif: "conge", commentaire: "Congés posés en septembre", createdAt: jours(-20) },
+  { id: "ind-2", entrepriseId: DEMO_ENTREPRISE_ID, membreId: "m-chef-2", debut: jour(6), fin: jour(6), motif: "formation", commentaire: "Session CQP chapiste", createdAt: jours(-15) },
+];
+
+export const demoMessages: Message[] = [
+  { id: "msg-1", entrepriseId: DEMO_ENTREPRISE_ID, chantierId: "ch-1", auteurId: "m-chef-1", texte: "Visite faite, isolant jointif, piges réglées. Il manque 2 ml de bande périphérique côté garage, je repasse demain matin avant le camion.", signalement: false, createdAt: jours(-10) },
+  { id: "msg-2", entrepriseId: DEMO_ENTREPRISE_ID, chantierId: "ch-1", auteurId: "m-bureau", texte: "Bande commandée, livrée au dépôt ce soir.", signalement: false, createdAt: jours(-10).replace("T08:00", "T14:30") },
+  { id: "msg-3", entrepriseId: DEMO_ENTREPRISE_ID, chantierId: "ch-1", auteurId: "m-chef-1", texte: "Deuxième toupie arrivée à 23 cm d'étalement, 15 l/m³ ajoutés dans la plage. Coulage terminé 11 h 20, 150 m².", signalement: false, createdAt: jours(-9).replace("T08:00", "T11:25") },
+  { id: "msg-4", entrepriseId: DEMO_ENTREPRISE_ID, chantierId: "ch-2", auteurId: "m-chef-1", texte: "Le portail de la cour fait 3,20 m : la toupie de 8 m³ ne passera pas, prévoir une 6 m³ ou pomper depuis la rue (60 m).", signalement: true, createdAt: jours(-1).replace("T08:00", "T16:40") },
 ];
 
 export const demoClients: Client[] = [
@@ -227,7 +248,9 @@ export const demoChantiers: Chantier[] = [
     clientId: "c-1",
     produitId: "p-classic",
     centraleId: "ce-1",
+    equipeId: "eq-1",
     chefEquipeId: "m-chef-1",
+    surfacePrevueM2: 150,
     numero: `CH-${annee}-0019`,
     statut: "sechage",
     adresse: "Lot 12, Les Jardins de Corbas",
@@ -253,7 +276,9 @@ export const demoChantiers: Chantier[] = [
     clientId: "c-4",
     produitId: "p-viscochape",
     centraleId: "ce-2",
+    equipeId: "eq-1",
     chefEquipeId: "m-chef-1",
+    surfacePrevueM2: 210,
     numero: `CH-${annee}-0020`,
     statut: "pret",
     adresse: "École Jean Jaurès, 2 rue de la République",
@@ -275,7 +300,10 @@ export const demoChantiers: Chantier[] = [
     clientId: "c-3",
     produitId: "p-classic",
     centraleId: "ce-1",
+    equipeId: "eq-2",
     chefEquipeId: "m-chef-2",
+    surfacePrevueM2: 320,
+    renforts: [{ nom: "Intérimaire Manpower", origine: "Agence Vénissieux" }],
     numero: `CH-${annee}-0021`,
     statut: "planifie",
     adresse: "Résidence Les Terrasses, bât. B",

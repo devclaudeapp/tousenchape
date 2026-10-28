@@ -5,9 +5,12 @@ import type {
   Controle,
   Devis,
   Entreprise,
+  Equipe,
   Facture,
+  Indisponibilite,
   LivraisonBon,
   Membre,
+  Message,
   Produit,
 } from "@/lib/domain/types";
 
@@ -24,6 +27,23 @@ export interface DataStore {
   entreprise(): Promise<Entreprise>;
   mettreAJourEntreprise(patch: Partial<Entreprise>): Promise<Entreprise>;
   membres(): Promise<Membre[]>;
+  membre(id: string): Promise<Membre | null>;
+  creerMembre(data: Omit<Membre, "id" | "entrepriseId">): Promise<Membre>;
+  mettreAJourMembre(id: string, patch: Partial<Membre>): Promise<Membre>;
+
+  equipes(): Promise<Equipe[]>;
+  creerEquipe(data: Omit<Equipe, "id" | "entrepriseId">): Promise<Equipe>;
+  mettreAJourEquipe(id: string, patch: Partial<Equipe>): Promise<Equipe>;
+
+  indisponibilites(): Promise<Indisponibilite[]>;
+  creerIndisponibilite(data: Omit<Indisponibilite, "id" | "entrepriseId" | "createdAt">): Promise<Indisponibilite>;
+  supprimerIndisponibilite(id: string): Promise<void>;
+
+  messages(chantierId?: string): Promise<Message[]>;
+  creerMessage(data: Omit<Message, "id" | "entrepriseId" | "createdAt">): Promise<Message>;
+  mettreAJourMessage(id: string, patch: Partial<Message>): Promise<Message>;
+  /** Enregistre une photo (data URL JPEG déjà compressée côté client) et retourne l'URL à stocker. */
+  enregistrerPhoto(dataUrl: string, chantierId: string): Promise<string>;
 
   clients(): Promise<Client[]>;
   client(id: string): Promise<Client | null>;

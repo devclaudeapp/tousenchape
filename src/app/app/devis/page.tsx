@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getStore } from "@/lib/auth/session";
+import { exiger } from "@/lib/auth/roles";
 import { chiffrerDevisEnregistre } from "@/lib/domain/chiffrage";
 import { fmtDate, fmtEuros, fmtNombre, libelleStatutDevis } from "@/lib/format";
 import { Badge, EnTete, Vide } from "@/components/ui";
@@ -9,6 +10,7 @@ export const metadata = { title: "Devis" };
 
 export default async function ListeDevis() {
   const { session, store } = await getStore();
+  exiger(session, "devis");
   const [devis, clients, produits] = await Promise.all([store.devisListe(), store.clients(), store.produits()]);
 
   return (

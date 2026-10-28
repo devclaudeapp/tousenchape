@@ -7,7 +7,10 @@ import { VISITE_TECHNIQUE } from "@/lib/domain/checklists";
 import { construireFicheTracabilite } from "@/lib/domain/tracabilite";
 import { fmtDate, fmtDateLongue, fmtEuros, fmtHeure, fmtNombre, libelleStatutChantier, libelleStatutFacture, libelleTypeFacture } from "@/lib/format";
 import { Badge, Carte, Definition, EnTete, ListeAlertes, Vide } from "@/components/ui";
+import { estBureau } from "@/lib/auth/roles";
+import { FilChantier } from "@/components/fil-chantier";
 import { ajouterLivraison, changerStatutChantier, creerFactureChantier, enregistrerVisiteTechnique, planifierChantier } from "../actions";
+import { publierMessage, traiterSignalement } from "../fil-actions";
 
 export default async function FicheChantier({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ erreur?: string; visite?: string; planifier?: string }> }) {
   const { id } = await params;
@@ -15,7 +18,7 @@ export default async function FicheChantier({ params, searchParams }: { params: 
   const { session, store } = await getStore();
   const chantier = await store.chantier(id);
   if (!chantier) notFound();
-  const [client, produits, centrales, membres, livraisons, controles, factures, devis] = await Promise.all([
+  const [client, produits, centrales, membres, livraisons, controles, factures, devis, equipes, messages] = await Promise.all([
     store.client(chantier.clientId),
     store.produits(),
     store.centrales(),
@@ -24,7 +27,10 @@ export default async function FicheChantier({ params, searchParams }: { params: 
     store.controles(id),
     store.factures(),
     chantier.devisId ? store.devis(chantier.devisId) : null,
+    store.equipes(),
+    store.messages(id),
   ]);
+  const equipe = equipes.find((e) => e.id === chantier.equipeId);
   const produit = produits.find((p) => p.id === chantier.produitId) ?? null;
   const centrale = centrales.find((c) => c.id === chantier.centraleId);
   const chef = membres.find((m) => m.id === chantier.chefEquipeId) ?? null;
@@ -92,7 +98,18 @@ export default async function FicheChantier({ params, searchParams }: { params: 
               <input id="heurePremierCamion" name="heurePremierCamion" type="time" defaultValue={chantier.heurePremierCamion ?? "07:30"} className="champ" />
             </div>
             <div>
-              <label htmlFor="chefEquipeId" className="etiquette">Chef d&apos;équipe (CQP requis)</label>
+              <label htmlFor="equipeId" className="etiquette">Équipe</label>
+              <select id="equipeId" name="equipeId" defaultValue={chantier.equipeId ?? ""} className="champ">
+                <option value="">—</option>
+                {equipes.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nom} · {e.capaciteM2Jour} m²/j
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="chefEquipeId" className="etiquette">Chef d&apos;équipe (CQP requis, sinon celui de l&apos;équipe)</label>
               <select id="chefEquipeId" name="chefEquipeId" defaultValue={chantier.chefEquipeId ?? ""} className="champ">
                 <option value="">À affecter</option>
                 {chefs.map((m) => (
@@ -135,6 +152,14 @@ export default async function FicheChantier({ params, searchParams }: { params: 
             <div className="sm:col-span-3 lg:col-span-4">
               <label htmlFor="natureSupport" className="etiquette">Nature du support (fiche de traçabilité)</label>
               <input id="natureSupport" name="natureSupport" defaultValue={chantier.natureSupport} className="champ" placeholder="Isolant PU 80 mm sur dalle béton, plancher chauffant type A, tube 16 mm" />
+            </div>
+            <div>
+              <label htmlFor="renfortNom" className="etiquette">Renfort du jour (intérimaire, prêt)</label>
+              <input id="renfortNom" name="renfortNom" className="champ" placeholder="Nom" />
+            </div>
+            <div>
+              <label htmlFor="renfortOrigine" className="etiquette">Origine du renfort</label>
+              <input id="renfortOrigine" name="renfortOrigine" className="champ" placeholder="Agence, autre équipe" />
             </div>
             <div className="sm:col-span-3 lg:col-span-4">
               <label htmlFor="accesCamion" className="etiquette">Accès camion</label>
@@ -404,6 +429,12 @@ export default async function FicheChantier({ params, searchParams }: { params: 
             )}
           </Carte>
 
+          {/* Fil de chantier */}
+          <Carte titre={`Fil de chantier · ${messages.length} message${messages.length > 1 ? "s" : ""}`} classe="scroll-mt-6">
+            <div id="fil" />
+            <FilChantier messages={messages} membres={membres} moiId={session.membre.id} bureau={estBureau(session)} publier={publierMessage.bind(null, id)} traiter={traiterSignalement.bind(null, id)} />
+          </Carte>
+
           {/* Facturation */}
           <Carte titre="Facturation">
             {mesFactures.length === 0 ? <p className="text-sm text-stone-500">Aucune facture pour ce chantier.</p> : (
@@ -438,6 +469,7 @@ export default async function FicheChantier({ params, searchParams }: { params: 
             <Definition
               items={[
                 { libelle: "Coulage", valeur: chantier.dateCoulage ? `${fmtDate(chantier.dateCoulage)}${chantier.heurePremierCamion ? `, 1er camion ${chantier.heurePremierCamion}` : ""}` : "À planifier" },
+                { libelle: "Équipe", valeur: equipe ? `${equipe.nom}${chantier.renforts && chantier.renforts.length > 0 ? ` + ${chantier.renforts.map((r) => r.nom).join(", ")}` : ""}` : "—" },
                 { libelle: "Chef d'équipe", valeur: chef ? `${chef.nom}${chef.cqpNumero ? ` · CQP ${chef.cqpNumero}` : " · sans CQP"}` : "À affecter" },
                 { libelle: "Produit", valeur: produit ? `${produit.fabricant} ${produit.nom} (${produit.classe})` : "—" },
                 { libelle: "Centrale", valeur: centrale ? `${centrale.nom} · commande par ${centrale.canalCommande === "email" ? "e-mail" : "portail"}` : "—" },

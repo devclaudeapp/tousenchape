@@ -7,9 +7,12 @@ import type {
   Controle,
   Devis,
   Entreprise,
+  Equipe,
   Facture,
+  Indisponibilite,
   LivraisonBon,
   Membre,
+  Message,
   Produit,
 } from "@/lib/domain/types";
 import { numeroSuivant, type DataStore } from "./store";
@@ -91,8 +94,60 @@ export class SupabaseStore implements DataStore {
   mettreAJourEntreprise(patch: Partial<Entreprise>) {
     return this.modifier<Entreprise>("entreprises", this.entrepriseId, patch);
   }
-  membres() {
-    return this.liste<Membre>("membres");
+  async membres() {
+    const m = await this.liste<Membre>("membres", (q) => q.order("nom"));
+    return m.map((x) => ({ ...x, habilitations: x.habilitations ?? [], actif: x.actif ?? true }));
+  }
+  async membre(id: string) {
+    const m = await this.un<Membre>("membres", id);
+    return m ? { ...m, habilitations: m.habilitations ?? [], actif: m.actif ?? true } : null;
+  }
+  creerMembre(data: Omit<Membre, "id" | "entrepriseId">) {
+    // Sans compte utilisateur encore : la ligne est rattachée à l'invitation par e-mail (user_id renseigné à la première connexion).
+    return this.inserer<Membre>("membres", { ...data, entrepriseId: this.entrepriseId });
+  }
+  mettreAJourMembre(id: string, patch: Partial<Membre>) {
+    return this.modifier<Membre>("membres", id, patch);
+  }
+
+  equipes() {
+    return this.liste<Equipe>("equipes", (q) => q.order("nom"));
+  }
+  creerEquipe(data: Omit<Equipe, "id" | "entrepriseId">) {
+    return this.inserer<Equipe>("equipes", { ...data, entrepriseId: this.entrepriseId });
+  }
+  mettreAJourEquipe(id: string, patch: Partial<Equipe>) {
+    return this.modifier<Equipe>("equipes", id, patch);
+  }
+
+  indisponibilites() {
+    return this.liste<Indisponibilite>("indisponibilites", (q) => q.order("debut"));
+  }
+  creerIndisponibilite(data: Omit<Indisponibilite, "id" | "entrepriseId" | "createdAt">) {
+    return this.inserer<Indisponibilite>("indisponibilites", { ...data, entrepriseId: this.entrepriseId });
+  }
+  async supprimerIndisponibilite(id: string) {
+    const { error } = await this.table("indisponibilites").delete().eq("id", id);
+    if (error) erreur(error, "Suppression indisponibilité");
+  }
+
+  messages(chantierId?: string) {
+    return this.liste<Message>("messages", (q) => (chantierId ? q.eq("chantier_id", chantierId) : q).order("created_at"));
+  }
+  creerMessage(data: Omit<Message, "id" | "entrepriseId" | "createdAt">) {
+    return this.inserer<Message>("messages", { ...data, entrepriseId: this.entrepriseId });
+  }
+  mettreAJourMessage(id: string, patch: Partial<Message>) {
+    return this.modifier<Message>("messages", id, patch);
+  }
+  async enregistrerPhoto(dataUrl: string, chantierId: string) {
+    const [entete, base64] = dataUrl.split(",");
+    const type = /data:(.*?);/.exec(entete ?? "")?.[1] ?? "image/jpeg";
+    const chemin = `${this.entrepriseId}/${chantierId}/${crypto.randomUUID()}.jpg`;
+    const { error } = await this.sb.storage.from("photos").upload(chemin, Buffer.from(base64 ?? "", "base64"), { contentType: type });
+    if (error) erreur(error, "Envoi de la photo");
+    const { data } = await this.sb.storage.from("photos").createSignedUrl(chemin, 60 * 60 * 24 * 365 * 10);
+    return data?.signedUrl ?? chemin;
   }
 
   clients() {

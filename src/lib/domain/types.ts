@@ -1,6 +1,7 @@
 import type { Alerte, ConfigurationChape, Piece, ProduitChape } from "@/lib/chape/types";
 import type { GrilleTarifaire, LigneDevis, OptionsDevis } from "@/lib/chape/devis";
 import type { ContexteFiscal } from "@/lib/chape/tva";
+import type { Habilitation, MotifIndisponibilite, TypeContrat } from "@/lib/domain/habilitations";
 
 /**
  * Modèle applicatif, sérialisable (dates en ISO 8601) pour passer du serveur aux composants.
@@ -39,10 +40,54 @@ export interface Membre {
   entrepriseId: string;
   nom: string;
   email: string;
+  telephone?: string;
   role: RoleMembre;
-  equipe?: string;
+  equipeId?: string;
+  typeContrat?: TypeContrat;
+  dateEntree?: string;
+  /** CQP chef d'équipe chapiste : exigé sur chaque chantier depuis le 1er août 2024. */
   cqpNumero?: string;
   cqpDate?: string;
+  habilitations: Habilitation[];
+  actif: boolean;
+  notes?: string;
+}
+
+export interface Equipe {
+  id: string;
+  entrepriseId: string;
+  nom: string;
+  /** Couleur d'affichage dans le planning (classe Tailwind ou code hexadécimal). */
+  couleur: string;
+  chefId?: string;
+  /** Surface qu'une équipe coule confortablement en une journée, en m². */
+  capaciteM2Jour: number;
+}
+
+export interface Indisponibilite {
+  id: string;
+  entrepriseId: string;
+  membreId: string;
+  /** Dates ISO AAAA-MM-JJ, bornes incluses. */
+  debut: string;
+  fin: string;
+  motif: MotifIndisponibilite;
+  commentaire?: string;
+  createdAt: string;
+}
+
+export interface Message {
+  id: string;
+  entrepriseId: string;
+  chantierId: string;
+  auteurId: string;
+  texte: string;
+  /** Photo compressée (data URL en démo, URL de stockage avec Supabase). */
+  photoUrl?: string;
+  /** Un signalement remonte dans les alertes du patron jusqu'à sa prise en compte. */
+  signalement: boolean;
+  traiteLe?: string;
+  createdAt: string;
 }
 
 export interface Client {
@@ -146,7 +191,12 @@ export interface Chantier {
   clientId: string;
   produitId?: string;
   centraleId?: string;
+  equipeId?: string;
   chefEquipeId?: string;
+  /** Renforts du jour (intérimaires, prêt d'une autre équipe). */
+  renforts?: { nom: string; origine?: string }[];
+  /** Surface prévue au devis, en m² (charge du planning). */
+  surfacePrevueM2?: number;
   numero: string;
   statut: StatutChantier;
   adresse: string;
