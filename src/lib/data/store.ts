@@ -4,14 +4,18 @@ import type {
   Client,
   Controle,
   Devis,
+  DocumentEntreprise,
   Entreprise,
   Equipe,
   Facture,
   Indisponibilite,
   LivraisonBon,
+  Materiel,
   Membre,
   Message,
+  Pointage,
   Produit,
+  RendezVous,
 } from "@/lib/domain/types";
 
 /**
@@ -44,6 +48,24 @@ export interface DataStore {
   mettreAJourMessage(id: string, patch: Partial<Message>): Promise<Message>;
   /** Enregistre une photo (data URL JPEG déjà compressée côté client) et retourne l'URL à stocker. */
   enregistrerPhoto(dataUrl: string, chantierId: string): Promise<string>;
+
+  pointages(filtre?: { membreId?: string; chantierId?: string; depuis?: string; jusqua?: string }): Promise<Pointage[]>;
+  pointage(id: string): Promise<Pointage | null>;
+  creerPointage(data: Omit<Pointage, "id" | "entrepriseId" | "createdAt">): Promise<Pointage>;
+  mettreAJourPointage(id: string, patch: Partial<Pointage>): Promise<Pointage>;
+
+  materiels(): Promise<Materiel[]>;
+  creerMateriel(data: Omit<Materiel, "id" | "entrepriseId">): Promise<Materiel>;
+  mettreAJourMateriel(id: string, patch: Partial<Materiel>): Promise<Materiel>;
+
+  rendezVous(): Promise<RendezVous[]>;
+  creerRendezVous(data: Omit<RendezVous, "id" | "entrepriseId" | "createdAt">): Promise<RendezVous>;
+  mettreAJourRendezVous(id: string, patch: Partial<RendezVous>): Promise<RendezVous>;
+  supprimerRendezVous(id: string): Promise<void>;
+
+  documents(): Promise<DocumentEntreprise[]>;
+  creerDocument(data: Omit<DocumentEntreprise, "id" | "entrepriseId" | "createdAt">): Promise<DocumentEntreprise>;
+  supprimerDocument(id: string): Promise<void>;
 
   clients(): Promise<Client[]>;
   client(id: string): Promise<Client | null>;

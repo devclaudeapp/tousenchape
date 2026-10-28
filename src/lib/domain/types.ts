@@ -2,6 +2,7 @@ import type { Alerte, ConfigurationChape, Piece, ProduitChape } from "@/lib/chap
 import type { GrilleTarifaire, LigneDevis, OptionsDevis } from "@/lib/chape/devis";
 import type { ContexteFiscal } from "@/lib/chape/tva";
 import type { Habilitation, MotifIndisponibilite, TypeContrat } from "@/lib/domain/habilitations";
+import type { ParametresPaie, StatutPointage, TypePointage } from "@/lib/domain/heures";
 
 /**
  * Modèle applicatif, sérialisable (dates en ISO 8601) pour passer du serveur aux composants.
@@ -33,6 +34,12 @@ export interface Entreprise {
   formule: "essai" | "solo" | "equipe" | "entreprise";
   tauxPertes: number;
   grilleTarifaire: GrilleTarifaire;
+  parametresPaie?: ParametresPaie;
+  /** Position du dépôt, pour les zones de petit déplacement. */
+  depotLat?: number;
+  depotLng?: number;
+  /** Coût horaire chargé par défaut, en €. */
+  coutHoraireDefaut?: number;
 }
 
 export interface Membre {
@@ -51,6 +58,93 @@ export interface Membre {
   habilitations: Habilitation[];
   actif: boolean;
   notes?: string;
+  /** Matricule paie, repris dans l'export pour l'expert-comptable. */
+  matricule?: string;
+  /** Coût horaire chargé, en €, pour la rentabilité réelle (jamais visible de l'équipe). */
+  coutHoraire?: number;
+}
+
+export interface Pointage {
+  id: string;
+  entrepriseId: string;
+  membreId: string;
+  chantierId?: string;
+  /** Journée ISO AAAA-MM-JJ. */
+  date: string;
+  debut: string;
+  fin?: string;
+  pauseMin: number;
+  type: TypePointage;
+  zoneTrajet?: number | null;
+  panier: boolean;
+  grandDeplacement: boolean;
+  statut: StatutPointage;
+  latDebut?: number;
+  lngDebut?: number;
+  latFin?: number;
+  lngFin?: number;
+  /** Distance entre le pointage et le chantier, en km, quand les deux positions sont connues. */
+  ecartChantierKm?: number;
+  commentaire?: string;
+  valideChefId?: string;
+  valideBureauId?: string;
+  createdAt: string;
+}
+
+export type TypeMateriel = "pompe" | "malaxeur" | "camion" | "laser" | "bombe_cm" | "autre";
+export type TypeControleMateriel = "vgp" | "entretien" | "controle_technique" | "etalonnage" | "autre";
+
+export interface ControleMateriel {
+  id: string;
+  type: TypeControleMateriel;
+  libelle?: string;
+  dateFait?: string;
+  prochaineDate?: string;
+  commentaire?: string;
+}
+
+export interface Materiel {
+  id: string;
+  entrepriseId: string;
+  type: TypeMateriel;
+  nom: string;
+  immatriculation?: string;
+  numeroSerie?: string;
+  dateAchat?: string;
+  equipeId?: string;
+  actif: boolean;
+  controles: ControleMateriel[];
+  notes?: string;
+}
+
+export type TypeRendezVous = "visite_technique" | "metre" | "rdv_client" | "autre";
+
+export interface RendezVous {
+  id: string;
+  entrepriseId: string;
+  type: TypeRendezVous;
+  date: string;
+  heure: string;
+  dureeMin: number;
+  chantierId?: string;
+  clientId?: string;
+  membreId?: string;
+  adresse?: string;
+  notes?: string;
+  rappelEnvoyeLe?: string;
+  createdAt: string;
+}
+
+export type TypeDocumentEntreprise = "kbis" | "urssaf" | "decennale" | "rc_pro" | "liste_salaries" | "rib" | "autre";
+
+export interface DocumentEntreprise {
+  id: string;
+  entrepriseId: string;
+  type: TypeDocumentEntreprise;
+  nom: string;
+  dateFin?: string;
+  url?: string;
+  createdAt: string;
 }
 
 export interface Equipe {
@@ -197,6 +291,9 @@ export interface Chantier {
   renforts?: { nom: string; origine?: string }[];
   /** Surface prévue au devis, en m² (charge du planning). */
   surfacePrevueM2?: number;
+  materielIds?: string[];
+  latitude?: number;
+  longitude?: number;
   numero: string;
   statut: StatutChantier;
   adresse: string;

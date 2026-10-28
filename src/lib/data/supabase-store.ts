@@ -6,14 +6,18 @@ import type {
   Client,
   Controle,
   Devis,
+  DocumentEntreprise,
   Entreprise,
   Equipe,
   Facture,
   Indisponibilite,
   LivraisonBon,
+  Materiel,
   Membre,
   Message,
+  Pointage,
   Produit,
+  RendezVous,
 } from "@/lib/domain/types";
 import { numeroSuivant, type DataStore } from "./store";
 
@@ -27,6 +31,8 @@ type Ligne = Record<string, unknown>;
 /** Sous-ensemble du constructeur de requête PostgREST utilisé ici. */
 interface Requete extends PromiseLike<{ data: unknown; error: { message: string } | null }> {
   eq(colonne: string, valeur: string): Requete;
+  gte(colonne: string, valeur: string): Requete;
+  lte(colonne: string, valeur: string): Requete;
   order(colonne: string, options?: { ascending?: boolean }): Requete;
 }
 
@@ -140,6 +146,62 @@ export class SupabaseStore implements DataStore {
   mettreAJourMessage(id: string, patch: Partial<Message>) {
     return this.modifier<Message>("messages", id, patch);
   }
+  pointages(filtre: { membreId?: string; chantierId?: string; depuis?: string; jusqua?: string } = {}) {
+    return this.liste<Pointage>("pointages", (q) => {
+      let r = q;
+      if (filtre.membreId) r = r.eq("membre_id", filtre.membreId);
+      if (filtre.chantierId) r = r.eq("chantier_id", filtre.chantierId);
+      if (filtre.depuis) r = r.gte("date", filtre.depuis);
+      if (filtre.jusqua) r = r.lte("date", filtre.jusqua);
+      return r.order("debut");
+    });
+  }
+  pointage(id: string) {
+    return this.un<Pointage>("pointages", id);
+  }
+  creerPointage(data: Omit<Pointage, "id" | "entrepriseId" | "createdAt">) {
+    return this.inserer<Pointage>("pointages", { ...data, entrepriseId: this.entrepriseId });
+  }
+  mettreAJourPointage(id: string, patch: Partial<Pointage>) {
+    return this.modifier<Pointage>("pointages", id, patch);
+  }
+
+  async materiels() {
+    const m = await this.liste<Materiel>("materiels", (q) => q.order("nom"));
+    return m.map((x) => ({ ...x, controles: x.controles ?? [], actif: x.actif ?? true }));
+  }
+  creerMateriel(data: Omit<Materiel, "id" | "entrepriseId">) {
+    return this.inserer<Materiel>("materiels", { ...data, entrepriseId: this.entrepriseId });
+  }
+  mettreAJourMateriel(id: string, patch: Partial<Materiel>) {
+    return this.modifier<Materiel>("materiels", id, patch);
+  }
+
+  rendezVous() {
+    return this.liste<RendezVous>("rendez_vous", (q) => q.order("date").order("heure"));
+  }
+  creerRendezVous(data: Omit<RendezVous, "id" | "entrepriseId" | "createdAt">) {
+    return this.inserer<RendezVous>("rendez_vous", { ...data, entrepriseId: this.entrepriseId });
+  }
+  mettreAJourRendezVous(id: string, patch: Partial<RendezVous>) {
+    return this.modifier<RendezVous>("rendez_vous", id, patch);
+  }
+  async supprimerRendezVous(id: string) {
+    const { error } = await this.table("rendez_vous").delete().eq("id", id);
+    if (error) erreur(error, "Suppression rendez-vous");
+  }
+
+  documents() {
+    return this.liste<DocumentEntreprise>("documents_entreprise", (q) => q.order("type"));
+  }
+  creerDocument(data: Omit<DocumentEntreprise, "id" | "entrepriseId" | "createdAt">) {
+    return this.inserer<DocumentEntreprise>("documents_entreprise", { ...data, entrepriseId: this.entrepriseId });
+  }
+  async supprimerDocument(id: string) {
+    const { error } = await this.table("documents_entreprise").delete().eq("id", id);
+    if (error) erreur(error, "Suppression document");
+  }
+
   async enregistrerPhoto(dataUrl: string, chantierId: string) {
     const [entete, base64] = dataUrl.split(",");
     const type = /data:(.*?);/.exec(entete ?? "")?.[1] ?? "image/jpeg";

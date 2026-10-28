@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
-      <aside className="flex flex-col border-b border-stone-200 bg-white lg:w-64 lg:border-r lg:border-b-0">
+      <aside className="flex flex-col border-b border-stone-200 bg-white lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between px-4 py-4">
           <Link href="/app" className="flex items-center gap-2 font-semibold text-brand-800">
             <span className="inline-block h-5 w-5 rounded bg-brand-700" aria-hidden />
@@ -45,7 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </aside>
-      <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+      <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
     </div>

@@ -5,6 +5,10 @@ import { exiger } from "@/lib/auth/roles";
 import { indisponibleLe } from "@/lib/domain/alertes";
 import { fmtDateLongue, libelleStatutChantier } from "@/lib/format";
 import { Badge } from "@/components/ui";
+import { Pointeuse } from "@/components/pointeuse";
+import { pointer } from "@/app/app/heures/actions";
+import { dureeHeures, lundiDe } from "@/lib/domain/heures";
+import { fmtNombre } from "@/lib/format";
 import type { Chantier, Client, Message, Produit } from "@/lib/domain/types";
 
 function CarteChantier({ c, principal, clients, produits, messages }: { c: Chantier; principal?: boolean; clients: Client[]; produits: Produit[]; messages: Message[] }) {
@@ -86,10 +90,12 @@ const decaler = (iso: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-export default async function MaJournee() {
+export default async function MaJournee({ searchParams }: { searchParams: Promise<{ erreur?: string }> }) {
+  const { erreur } = await searchParams;
   const { session, store } = await getStore();
   exiger(session, "ma_journee");
-  const [chantiers, clients, produits, membres, equipes, indispos, messages] = await Promise.all([
+  const lundi = lundiDe(new Date().toISOString().slice(0, 10));
+  const [chantiers, clients, produits, membres, equipes, indispos, messages, mesPointages] = await Promise.all([
     store.chantiers(),
     store.clients(),
     store.produits(),
@@ -97,7 +103,10 @@ export default async function MaJournee() {
     store.equipes(),
     store.indisponibilites(),
     store.messages(),
+    store.pointages({ membreId: session.membre.id, depuis: lundi }),
   ]);
+  const pointageOuvert = mesPointages.find((p) => !p.fin) ?? null;
+  const heuresSemaine = mesPointages.filter((p) => p.statut !== "refuse").reduce((s, p) => s + dureeHeures(p), 0);
   const moi = session.membre;
   const terrain = moi.role === "chef_equipe" || moi.role === "applicateur";
   const equipe = equipes.find((e) => e.id === moi.equipeId);
@@ -117,6 +126,19 @@ export default async function MaJournee() {
       <h1 className="text-xl font-semibold text-stone-900">Bonjour {moi.nom.split(" ")[0]}</h1>
       <p className="text-sm capitalize text-stone-500">{fmtDateLongue(new Date().toISOString())}</p>
       {monAbsence && <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">Vous êtes noté absent aujourd&apos;hui ({monAbsence.motif}).</p>}
+      {erreur && <p className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{erreur}</p>}
+
+      <section className="mt-5">
+        <Pointeuse
+          pointageOuvert={pointageOuvert}
+          chantiers={[...duJour, ...deDemain].map((c) => ({ id: c.id, libelle: `${clients.find((x) => x.id === c.clientId)?.nom ?? c.numero} · ${c.ville}` }))}
+          chantierParDefaut={duJour[0]?.id}
+          pointer={pointer}
+        />
+        <p className="mt-2 text-xs text-stone-500">
+          Cette semaine : {fmtNombre(heuresSemaine)} h pointées{mesPointages.some((p) => p.statut === "saisi" && p.fin) ? ", en attente de validation" : ""}. Les heures sont vérifiées par le chef d&apos;équipe puis le bureau.
+        </p>
+      </section>
 
       <section className="mt-6">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Aujourd&apos;hui</h2>

@@ -36,6 +36,7 @@ export async function planifierChantier(chantierId: string, formData: FormData) 
     equipeId,
     chefEquipeId,
     renforts,
+    materielIds: formData.getAll("materielIds").map(String).filter(Boolean),
     centraleId: vide(formData.get("centraleId")),
     produitId: vide(formData.get("produitId")),
     accesCamion: vide(formData.get("accesCamion")),

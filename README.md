@@ -26,10 +26,16 @@ En bas du menu, **Changer de rôle** permet de voir l'application comme le géra
 | Ma journée | Premier écran du chef d'équipe et de l'applicateur, sur téléphone : chantiers du jour et du lendemain, itinéraire, heure du premier camion, accès, appel du client, visite technique ou saisie de toupie en un appui, coéquipiers présents ou absents. |
 | Fil de chantier | Messages et photos (compressées sur le téléphone) par chantier, datés et attribués ; un **signalement** remonte dans les alertes du patron jusqu'à son traitement. |
 | Alertes patron | Sur le tableau de bord : habilitations et décennale qui expirent, chantier sans chef CQP ou avec un chef absent, visite technique manquante à J-2, factures en retard, signalements du terrain. |
-| Droits | Gérant et bureau : tout ; chef d'équipe : devis en lecture, chantiers, planning, son équipe ; applicateur : ses chantiers, sa fiche. Les prix d'achat et marges ne sortent pas du bureau. |
+| Heures | **Pointage** depuis Ma journée (arrivée, départ, pause, panier, grand déplacement, position GPS et écart au chantier), feuille d'heures hebdomadaire par équipe, validation par le chef puis le bureau, corrections, saisie manuelle, validation groupée de la semaine. |
+| Paie | **Variables de paie** mensuelles par salarié : heures normales, supplémentaires à 25 % et 50 % (semaine de 35 h, seuil 43 h), paniers, indemnités de petit déplacement par zone, grands déplacements ; export CSV pour l'expert-comptable ; seuls les pointages validés par le bureau comptent. L'outil ne fait pas la paie. |
+| Matériel | Pompes, malaxeurs, véhicules, lasers, bombe CM : équipe, affectation par chantier, **contrôles périodiques** (VGP, entretien, contrôle technique, étalonnage) avec prochaine échéance calculée et alertes à 30 jours. |
+| Rentabilité | Réservée au gérant : par chantier, facturé contre mortier réellement livré, heures pointées × coût horaire chargé et pompe ; marge en € et %, pertes réelles de mortier contre le taux du devis, m² par heure ; par équipe, m² par jour de coulage, heures par m², marge cumulée. |
+| Agenda | Visites techniques, métrés et rendez-vous sur quatorze jours avec les coulages ; **rappel J-1** au client prêt à envoyer (accès toupie, eau, électricité, courants d'air, chauffage coupé) ; confirmation de rendez-vous par e-mail. |
+| Documents | Coffre-fort des pièces de vigilance (Kbis, URSSAF, décennale, RC pro, liste des salariés étrangers) avec échéances et alertes ; pack d'envoi aux donneurs d'ordre tous les six mois. |
+| Droits | Gérant et bureau : tout (rentabilité : gérant seul) ; chef d'équipe : devis en lecture, chantiers, planning, son équipe, heures de son équipe, matériel, agenda ; applicateur : ses chantiers, sa fiche, son pointage. Les prix d'achat, coûts horaires et marges ne sortent pas du bureau. |
 | Paramètres | Entreprise et assurance décennale, grille tarifaire, produits et centrales. |
 
-Le cœur métier est un module TypeScript pur, `src/lib/chape/`, couvert avec `src/lib/domain/` par 98 tests (`npm test`) :
+Le cœur métier est un module TypeScript pur, `src/lib/chape/`, couvert avec `src/lib/domain/` par 115 tests (`npm test`) :
 
 - `epaisseurs.ts` : minimums et maximums (RP Tableaux 4, 5 et 8, plancher chauffant § 12) ;
 - `volume.ts` : volume, toupies, film, bande, charge ;
@@ -39,11 +45,13 @@ Le cœur métier est un module TypeScript pur, `src/lib/chape/`, couvert avec `s
 - `livraison.ts` : contrôle d'une toupie ;
 - `tva.ts` : régime de TVA et mentions ;
 - `devis.ts` : chiffrage par lots et totaux ;
-- `domain/habilitations.ts` et `domain/alertes.ts` : validité des documents, alertes du patron, charge des équipes.
+- `domain/habilitations.ts` et `domain/alertes.ts` : validité des documents, alertes du patron, charge des équipes ;
+- `domain/heures.ts` : durée des pointages, semaines à 35 h, majorations, paniers, zones de trajet, variables de paie et CSV ;
+- `domain/rentabilite.ts` : coûts réels, marge, pertes réelles, m²/h, agrégats par équipe.
 
 ## Mettre en production avec Supabase
 
-1. Créez un projet Supabase (région UE), puis appliquez `supabase/migrations/0001_init.sql`, `supabase/migrations/0002_equipes.sql` et `supabase/seed.sql` (via `supabase db push` ou l'éditeur SQL). La migration 0002 crée aussi le bucket privé `photos` pour le fil de chantier.
+1. Créez un projet Supabase (région UE), puis appliquez dans l'ordre `supabase/migrations/0001_init.sql`, `0002_equipes.sql`, `0003_heures_materiel.sql` et `supabase/seed.sql` (via `supabase db push` ou l'éditeur SQL). La migration 0002 crée aussi le bucket privé `photos` pour le fil de chantier.
 2. Activez la connexion par e-mail (lien magique) dans Authentication, avec `https://votre-domaine/auth/callback` dans les URL de redirection.
 3. Copiez `.env.example` en `.env.local` et renseignez `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `NEXT_PUBLIC_APP_URL`.
 4. Déployez sur Vercel (région Paris) avec les mêmes variables.
@@ -66,4 +74,4 @@ npm run build      # build de production
 
 ## Feuille de route
 
-Le cahier des charges complet (marché, référentiel produits, cadre légal, gestion des équipes par vague, modèle de données, V1 à V2) est tenu dans le document « Tous en chape — Cahier des charges ». Prochaines étapes : feuille d'heures géolocalisée et export des variables de paie, notifications push (après déploiement HTTPS), signature électronique par lien client, commande à la centrale (e-mail puis portail), contrôles mobiles hors ligne, Factur-X et plateforme agréée avant septembre 2027.
+Le cahier des charges complet (marché, référentiel produits, cadre légal, gestion des équipes par vague, modèle de données, V1 à V2) est tenu dans le document « Tous en chape — Cahier des charges ». L'application s'installe sur l'écran d'accueil d'un téléphone (manifeste PWA). Prochaines étapes : notifications push (après déploiement HTTPS), signature électronique par lien client, envoi d'e-mails avec pièces jointes (rappels, pack de vigilance), commande à la centrale (e-mail puis portail), contrôles mobiles hors ligne, Factur-X et plateforme agréée avant septembre 2027.

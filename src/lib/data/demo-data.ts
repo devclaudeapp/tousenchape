@@ -5,14 +5,18 @@ import type {
   Client,
   Controle,
   Devis,
+  DocumentEntreprise,
   Entreprise,
   Equipe,
   Facture,
   Indisponibilite,
   LivraisonBon,
+  Materiel,
   Membre,
   Message,
+  Pointage,
   Produit,
+  RendezVous,
 } from "@/lib/domain/types";
 
 /**
@@ -48,6 +52,9 @@ export const demoEntreprise: Entreprise = {
   formule: "equipe",
   tauxPertes: 0.05,
   grilleTarifaire: GRILLE_DEMO,
+  depotLat: 45.7441,
+  depotLng: 4.9711,
+  coutHoraireDefaut: 26,
 };
 
 export const demoEquipes: Equipe[] = [
@@ -58,11 +65,11 @@ export const demoEquipes: Equipe[] = [
 export const demoMembres: Membre[] = [
   { id: "m-gerant", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Thibault Rey", email: "demo@tousenchape.fr", telephone: "06 00 00 00 01", role: "gerant", typeContrat: "gerant", dateEntree: "2015-03-01", actif: true, habilitations: [{ id: "h-g1", type: "carte_btp", numero: "BTP-0001", dateFin: jour(400) }, { id: "h-g2", type: "permis_be" }] },
   { id: "m-bureau", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Sophie Martin", email: "sophie@rhone-chapes.fr", telephone: "04 72 00 00 01", role: "bureau", typeContrat: "cdi", dateEntree: "2019-09-02", actif: true, habilitations: [] },
-  { id: "m-chef-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Karim Benali", email: "karim@rhone-chapes.fr", telephone: "06 00 00 00 02", role: "chef_equipe", equipeId: "eq-1", typeContrat: "cdi", dateEntree: "2017-04-10", cqpNumero: "CH-2024-0871", cqpDate: "2024-06-12", actif: true, habilitations: [{ id: "h-k1", type: "carte_btp", numero: "BTP-0002", dateFin: jour(700) }, { id: "h-k2", type: "pompe_chape" }, { id: "h-k3", type: "sst", dateFin: jour(25) }, { id: "h-k4", type: "permis_be" }, { id: "h-k5", type: "visite_medicale", dateFin: jour(300) }] },
-  { id: "m-chef-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Lucas Perrin", email: "lucas@rhone-chapes.fr", telephone: "06 00 00 00 03", role: "chef_equipe", equipeId: "eq-2", typeContrat: "cdi", dateEntree: "2021-02-15", actif: true, notes: "CQP chapiste : session prévue au printemps.", habilitations: [{ id: "h-l1", type: "carte_btp", numero: "BTP-0003", dateFin: jour(900) }, { id: "h-l2", type: "pompe_chape" }, { id: "h-l3", type: "permis_b" }, { id: "h-l4", type: "visite_medicale", dateFin: jour(-12) }] },
-  { id: "m-app-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Mehdi Saïdi", email: "mehdi@rhone-chapes.fr", telephone: "06 00 00 00 04", role: "applicateur", equipeId: "eq-1", typeContrat: "cdi", dateEntree: "2022-06-01", actif: true, habilitations: [{ id: "h-m1", type: "carte_btp", numero: "BTP-0004", dateFin: jour(1200) }, { id: "h-m2", type: "permis_b" }, { id: "h-m3", type: "aipr", dateFin: jour(48) }] },
-  { id: "m-app-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Antoine Garcia", email: "antoine@rhone-chapes.fr", telephone: "06 00 00 00 05", role: "applicateur", equipeId: "eq-2", typeContrat: "apprenti", dateEntree: "2025-09-01", actif: true, habilitations: [{ id: "h-a1", type: "carte_btp", numero: "BTP-0005", dateFin: jour(1500) }] },
-  { id: "m-app-3", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Yanis Kone", email: "yanis@rhone-chapes.fr", telephone: "06 00 00 00 06", role: "applicateur", equipeId: "eq-2", typeContrat: "cdd", dateEntree: "2026-03-02", actif: true, habilitations: [{ id: "h-y1", type: "carte_btp", numero: "BTP-0006", dateFin: jour(1600) }, { id: "h-y2", type: "permis_b" }] },
+  { id: "m-chef-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Karim Benali", email: "karim@rhone-chapes.fr", telephone: "06 00 00 00 02", role: "chef_equipe", equipeId: "eq-1", typeContrat: "cdi", dateEntree: "2017-04-10", cqpNumero: "CH-2024-0871", cqpDate: "2024-06-12", actif: true, matricule: "0003", coutHoraire: 32, habilitations: [{ id: "h-k1", type: "carte_btp", numero: "BTP-0002", dateFin: jour(700) }, { id: "h-k2", type: "pompe_chape" }, { id: "h-k3", type: "sst", dateFin: jour(25) }, { id: "h-k4", type: "permis_be" }, { id: "h-k5", type: "visite_medicale", dateFin: jour(300) }] },
+  { id: "m-chef-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Lucas Perrin", email: "lucas@rhone-chapes.fr", telephone: "06 00 00 00 03", role: "chef_equipe", equipeId: "eq-2", typeContrat: "cdi", dateEntree: "2021-02-15", actif: true, matricule: "0004", coutHoraire: 29, notes: "CQP chapiste : session prévue au printemps.", habilitations: [{ id: "h-l1", type: "carte_btp", numero: "BTP-0003", dateFin: jour(900) }, { id: "h-l2", type: "pompe_chape" }, { id: "h-l3", type: "permis_b" }, { id: "h-l4", type: "visite_medicale", dateFin: jour(-12) }] },
+  { id: "m-app-1", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Mehdi Saïdi", email: "mehdi@rhone-chapes.fr", telephone: "06 00 00 00 04", role: "applicateur", equipeId: "eq-1", typeContrat: "cdi", dateEntree: "2022-06-01", actif: true, matricule: "0005", coutHoraire: 25, habilitations: [{ id: "h-m1", type: "carte_btp", numero: "BTP-0004", dateFin: jour(1200) }, { id: "h-m2", type: "permis_b" }, { id: "h-m3", type: "aipr", dateFin: jour(48) }] },
+  { id: "m-app-2", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Antoine Garcia", email: "antoine@rhone-chapes.fr", telephone: "06 00 00 00 05", role: "applicateur", equipeId: "eq-2", typeContrat: "apprenti", dateEntree: "2025-09-01", actif: true, matricule: "0006", coutHoraire: 14, habilitations: [{ id: "h-a1", type: "carte_btp", numero: "BTP-0005", dateFin: jour(1500) }] },
+  { id: "m-app-3", entrepriseId: DEMO_ENTREPRISE_ID, nom: "Yanis Kone", email: "yanis@rhone-chapes.fr", telephone: "06 00 00 00 06", role: "applicateur", equipeId: "eq-2", typeContrat: "cdd", dateEntree: "2026-03-02", actif: true, matricule: "0007", coutHoraire: 24, habilitations: [{ id: "h-y1", type: "carte_btp", numero: "BTP-0006", dateFin: jour(1600) }, { id: "h-y2", type: "permis_b" }] },
 ];
 
 export const demoIndisponibilites: Indisponibilite[] = [
@@ -251,6 +258,9 @@ export const demoChantiers: Chantier[] = [
     equipeId: "eq-1",
     chefEquipeId: "m-chef-1",
     surfacePrevueM2: 150,
+    materielIds: ["mat-pompe-1", "mat-laser-1"],
+    latitude: 45.6686,
+    longitude: 4.9015,
     numero: `CH-${annee}-0019`,
     statut: "sechage",
     adresse: "Lot 12, Les Jardins de Corbas",
@@ -392,4 +402,50 @@ export const demoFactures: Facture[] = [
     paiements: [],
     createdAt: jours(-70),
   },
+];
+
+/** Pointages validés sur le chantier de Corbas (coulé il y a 9 jours) et pointages de la semaine en attente. */
+function pointageDemo(id: string, membreId: string, chantierId: string | undefined, j: number, debut: string, fin: string | undefined, statut: Pointage["statut"], zone: number, patch: Partial<Pointage> = {}): Pointage {
+  const date = jour(j);
+  return { id, entrepriseId: DEMO_ENTREPRISE_ID, membreId, chantierId, date, debut: `${date}T${debut}:00`, fin: fin ? `${date}T${fin}:00` : undefined, pauseMin: 45, type: "chantier", zoneTrajet: zone, panier: true, grandDeplacement: false, statut, createdAt: jours(j), ...patch };
+}
+
+export const demoPointages: Pointage[] = [
+  // Visite technique de Corbas (J-10), puis coulage (J-9), équipe 1.
+  pointageDemo("pt-1", "m-chef-1", "ch-1", -10, "13:30", "15:00", "valide_bureau", 2, { pauseMin: 0, panier: false, latDebut: 45.6686, lngDebut: 4.9015, ecartChantierKm: 0.1 }),
+  pointageDemo("pt-2", "m-chef-1", "ch-1", -9, "06:45", "15:30", "valide_bureau", 2, { latDebut: 45.6686, lngDebut: 4.9015, ecartChantierKm: 0.1 }),
+  pointageDemo("pt-3", "m-app-1", "ch-1", -9, "06:45", "15:30", "valide_bureau", 2, { latDebut: 45.6688, lngDebut: 4.9012, ecartChantierKm: 0.1 }),
+  // Semaine précédente, équipe 1 au dépôt et sur un chantier terminé.
+  pointageDemo("pt-4", "m-chef-1", undefined, -8, "07:30", "16:30", "valide_bureau", null as unknown as number, { type: "depot", zoneTrajet: null, panier: false }),
+  pointageDemo("pt-5", "m-app-1", undefined, -8, "07:30", "16:30", "valide_bureau", null as unknown as number, { type: "depot", zoneTrajet: null, panier: false }),
+  // Cette semaine : saisis par l'équipe, à valider par le chef puis le bureau.
+  pointageDemo("pt-6", "m-app-1", undefined, -1, "07:30", "16:45", "saisi", 1, { type: "depot", commentaire: "Préparation du matériel pour Genas" }),
+  pointageDemo("pt-7", "m-chef-1", undefined, -1, "07:00", "17:00", "valide_chef", 1, { type: "depot" }),
+  pointageDemo("pt-8", "m-chef-2", "ch-3", -1, "08:00", "12:00", "saisi", 3, { type: "chantier", panier: false, commentaire: "Visite technique Bron, bât. B", ecartChantierKm: 0.2 }),
+  pointageDemo("pt-9", "m-app-2", undefined, -1, "07:30", "16:30", "saisi", 1, { type: "depot" }),
+];
+
+export const demoMateriels: Materiel[] = [
+  { id: "mat-pompe-1", entrepriseId: DEMO_ENTREPRISE_ID, type: "pompe", nom: "Pompe à chape Lancy TF400", numeroSerie: "TF4-2021-118", dateAchat: "2021-05-12", equipeId: "eq-1", actif: true, controles: [{ id: "cm-1", type: "vgp", libelle: "Vérification générale périodique", dateFait: jour(-300), prochaineDate: jour(65) }, { id: "cm-2", type: "entretien", libelle: "Vidange et joints de la trémie", dateFait: jour(-40), prochaineDate: jour(140) }] },
+  { id: "mat-pompe-2", entrepriseId: DEMO_ENTREPRISE_ID, type: "pompe", nom: "Pompe à chape Lancy TF300", numeroSerie: "TF3-2018-402", dateAchat: "2018-03-02", equipeId: "eq-2", actif: true, controles: [{ id: "cm-3", type: "vgp", libelle: "Vérification générale périodique", dateFait: jour(-380), prochaineDate: jour(-15) }] },
+  { id: "mat-camion-1", entrepriseId: DEMO_ENTREPRISE_ID, type: "camion", nom: "Camion plateau Iveco Daily", immatriculation: "GH-123-RC", dateAchat: "2022-09-01", equipeId: "eq-1", actif: true, controles: [{ id: "cm-4", type: "controle_technique", dateFait: jour(-200), prochaineDate: jour(165) }] },
+  { id: "mat-camion-2", entrepriseId: DEMO_ENTREPRISE_ID, type: "camion", nom: "Fourgon Renault Master", immatriculation: "FK-456-RC", dateAchat: "2020-01-15", equipeId: "eq-2", actif: true, controles: [{ id: "cm-5", type: "controle_technique", dateFait: jour(-700), prochaineDate: jour(20) }] },
+  { id: "mat-laser-1", entrepriseId: DEMO_ENTREPRISE_ID, type: "laser", nom: "Niveau laser Leica Rugby 640", numeroSerie: "LR-77812", equipeId: "eq-1", actif: true, controles: [{ id: "cm-6", type: "etalonnage", dateFait: jour(-100), prochaineDate: jour(265) }] },
+  { id: "mat-laser-2", entrepriseId: DEMO_ENTREPRISE_ID, type: "laser", nom: "Niveau laser Bosch GRL 300", equipeId: "eq-2", actif: true, controles: [] },
+  { id: "mat-cm-1", entrepriseId: DEMO_ENTREPRISE_ID, type: "bombe_cm", nom: "Bombe à carbure CM Gann", numeroSerie: "CM-5531", actif: true, controles: [{ id: "cm-7", type: "etalonnage", libelle: "Vérification du manomètre", dateFait: jour(-20), prochaineDate: jour(345) }] },
+];
+
+export const demoRendezVous: RendezVous[] = [
+  { id: "rv-1", entrepriseId: DEMO_ENTREPRISE_ID, type: "visite_technique", date: jour(1), heure: "14:00", dureeMin: 60, chantierId: "ch-3", clientId: "c-3", membreId: "m-chef-2", adresse: "Résidence Les Terrasses, bât. B, 69500 Bron", notes: "Vérifier la sous-couche acoustique et les zones de prélèvement.", createdAt: jours(-3) },
+  { id: "rv-2", entrepriseId: DEMO_ENTREPRISE_ID, type: "metre", date: jour(2), heure: "09:30", dureeMin: 45, clientId: "c-5", membreId: "m-bureau", adresse: "3 chemin du Lavoir, 69570 Dardilly", notes: "Métré du rez-de-jardin pour le devis DEV-0043.", createdAt: jours(-2) },
+  { id: "rv-3", entrepriseId: DEMO_ENTREPRISE_ID, type: "rdv_client", date: jour(4), heure: "11:00", dureeMin: 30, clientId: "c-1", membreId: "m-gerant", adresse: "ZA des Platanes, 69960 Corbas", notes: "Point trimestriel avec le conducteur de travaux, lots 13 à 18.", createdAt: jours(-1) },
+];
+
+export const demoDocuments: DocumentEntreprise[] = [
+  { id: "doc-1", entrepriseId: DEMO_ENTREPRISE_ID, type: "kbis", nom: "Extrait Kbis", dateFin: jour(70), createdAt: jours(-20) },
+  { id: "doc-2", entrepriseId: DEMO_ENTREPRISE_ID, type: "urssaf", nom: "Attestation de vigilance URSSAF", dateFin: jour(18), createdAt: jours(-160) },
+  { id: "doc-3", entrepriseId: DEMO_ENTREPRISE_ID, type: "decennale", nom: "Attestation d'assurance décennale SMABTP", dateFin: jour(220), createdAt: jours(-100) },
+  { id: "doc-4", entrepriseId: DEMO_ENTREPRISE_ID, type: "rc_pro", nom: "Attestation RC professionnelle", dateFin: jour(220), createdAt: jours(-100) },
+  { id: "doc-5", entrepriseId: DEMO_ENTREPRISE_ID, type: "liste_salaries", nom: "Liste nominative des salariés étrangers", dateFin: jour(-5), createdAt: jours(-200) },
+  { id: "doc-6", entrepriseId: DEMO_ENTREPRISE_ID, type: "rib", nom: "RIB", createdAt: jours(-400) },
 ];

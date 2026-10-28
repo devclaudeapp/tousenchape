@@ -1,5 +1,6 @@
 import { CATALOGUE_HABILITATIONS, etatValidite } from "@/lib/domain/habilitations";
-import type { Chantier, Entreprise, Equipe, Facture, Indisponibilite, Membre, Message } from "@/lib/domain/types";
+import type { Chantier, DocumentEntreprise, Entreprise, Equipe, Facture, Indisponibilite, Materiel, Membre, Message, Pointage } from "@/lib/domain/types";
+import { prochaineEcheance } from "@/lib/domain/materiel";
 
 /**
  * Alertes du patron : tout ce qui demande une décision ou une action, calculé à partir des données.
@@ -30,8 +31,11 @@ export function calculerAlertes(input: {
   factures: Facture[];
   indisponibilites: Indisponibilite[];
   messages: Message[];
+  materiels?: Materiel[];
+  documents?: DocumentEntreprise[];
+  pointages?: Pointage[];
 }): AlertePatron[] {
-  const { aujourdHui, entreprise, membres, equipes, chantiers, factures, indisponibilites, messages } = input;
+  const { aujourdHui, entreprise, membres, equipes, chantiers, factures, indisponibilites, messages, materiels = [], documents = [], pointages = [] } = input;
   const alertes: AlertePatron[] = [];
   const jour = aujourdHui.toISOString().slice(0, 10);
 
@@ -97,6 +101,24 @@ export function calculerAlertes(input: {
     const chantier = chantiers.find((c) => c.id === msg.chantierId);
     alertes.push({ code: `signalement_${msg.id}`, niveau: "urgent", titre: `Signalement de ${auteur?.nom ?? "l'équipe"} sur ${chantier?.numero ?? "un chantier"}`, detail: msg.texte.slice(0, 120), lien: `/app/chantiers/${msg.chantierId}#fil` });
   }
+
+  // Matériel : contrôles périodiques.
+  for (const m of materiels.filter((x) => x.actif)) {
+    const e = prochaineEcheance(m, aujourdHui);
+    if (e.etat === "expiree") alertes.push({ code: `materiel_retard_${m.id}`, niveau: "urgent", titre: `${m.nom} : ${e.libelle} en retard de ${Math.abs(e.joursRestants ?? 0)} jours`, detail: "Matériel à immobiliser jusqu'au contrôle.", lien: `/app/materiel/${m.id}` });
+    else if (e.etat === "expire_bientot") alertes.push({ code: `materiel_bientot_${m.id}`, niveau: "attention", titre: `${m.nom} : ${e.libelle} dans ${e.joursRestants} jours`, lien: `/app/materiel/${m.id}` });
+  }
+
+  // Documents de conformité.
+  for (const d of documents) {
+    const { etat, joursRestants } = etatValidite(d.dateFin, aujourdHui, 30);
+    if (etat === "expiree") alertes.push({ code: `document_perime_${d.id}`, niveau: "attention", titre: `${d.nom} périmé`, detail: "À renouveler avant le prochain envoi aux donneurs d'ordre.", lien: "/app/documents" });
+    else if (etat === "expire_bientot") alertes.push({ code: `document_bientot_${d.id}`, niveau: "info", titre: `${d.nom} expire dans ${joursRestants} jours`, lien: "/app/documents" });
+  }
+
+  // Heures en attente de validation depuis plus de 7 jours.
+  const anciens = pointages.filter((p) => p.fin && (p.statut === "saisi" || p.statut === "valide_chef") && dansJours(p.date, aujourdHui) <= -7);
+  if (anciens.length > 0) alertes.push({ code: "pointages_en_attente", niveau: "attention", titre: `${anciens.length} pointage${anciens.length > 1 ? "s" : ""} de plus d'une semaine à valider`, detail: "Les variables de paie du mois seront incomplètes.", lien: `/app/heures?semaine=${anciens[0]!.date}` });
 
   const poids: Record<NiveauAlerte, number> = { urgent: 0, attention: 1, info: 2 };
   return alertes.sort((a, b) => poids[a.niveau] - poids[b.niveau]);

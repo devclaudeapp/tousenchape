@@ -18,7 +18,7 @@ export default async function FicheChantier({ params, searchParams }: { params: 
   const { session, store } = await getStore();
   const chantier = await store.chantier(id);
   if (!chantier) notFound();
-  const [client, produits, centrales, membres, livraisons, controles, factures, devis, equipes, messages] = await Promise.all([
+  const [client, produits, centrales, membres, livraisons, controles, factures, devis, equipes, messages, materiels] = await Promise.all([
     store.client(chantier.clientId),
     store.produits(),
     store.centrales(),
@@ -29,6 +29,7 @@ export default async function FicheChantier({ params, searchParams }: { params: 
     chantier.devisId ? store.devis(chantier.devisId) : null,
     store.equipes(),
     store.messages(id),
+    store.materiels(),
   ]);
   const equipe = equipes.find((e) => e.id === chantier.equipeId);
   const produit = produits.find((p) => p.id === chantier.produitId) ?? null;
@@ -148,6 +149,16 @@ export default async function FicheChantier({ params, searchParams }: { params: 
             <div>
               <label htmlFor="etage" className="etiquette">Étage</label>
               <input id="etage" name="etage" type="number" min={0} defaultValue={chantier.etage} className="champ" />
+            </div>
+            <div className="sm:col-span-3 lg:col-span-4">
+              <span className="etiquette">Matériel emporté</span>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {materiels.filter((m) => m.actif).map((m) => (
+                  <label key={m.id} className="flex items-center gap-1.5 text-sm">
+                    <input type="checkbox" name="materielIds" value={m.id} defaultChecked={chantier.materielIds?.includes(m.id)} /> {m.nom}
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="sm:col-span-3 lg:col-span-4">
               <label htmlFor="natureSupport" className="etiquette">Nature du support (fiche de traçabilité)</label>
@@ -477,6 +488,7 @@ export default async function FicheChantier({ params, searchParams }: { params: 
                 { libelle: "Support", valeur: chantier.natureSupport ?? "—" },
                 { libelle: "Accès camion", valeur: chantier.accesCamion ?? "—" },
                 { libelle: "Classement", valeur: chantier.classementUPEC ?? "—" },
+                { libelle: "Matériel", valeur: chantier.materielIds && chantier.materielIds.length > 0 ? chantier.materielIds.map((mid) => materiels.find((m) => m.id === mid)?.nom ?? "?").join(", ") : "—" },
               ]}
             />
             {chantier.motifReport && <p className="mt-3 text-xs text-amber-700">Dernier report : {chantier.motifReport}</p>}

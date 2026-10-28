@@ -52,6 +52,8 @@ export const getSession = cache(async (): Promise<Session | null> => {
       cqpDate: membre.cqp_date ?? undefined,
       habilitations: membre.habilitations ?? [],
       actif: membre.actif ?? true,
+      matricule: membre.matricule ?? undefined,
+      coutHoraire: membre.cout_horaire ?? undefined,
     },
     entreprise,
     demo: false,

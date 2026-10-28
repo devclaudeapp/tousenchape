@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, FileText, HardHat, LayoutDashboard, Receipt, Settings, Sun, UserCog, Users } from "lucide-react";
+import { CalendarClock, CalendarDays, Clock, FileText, FolderLock, HardHat, LayoutDashboard, Receipt, Settings, Sun, TrendingUp, UserCog, Users, Wrench } from "lucide-react";
 import type { RoleMembre } from "@/lib/domain/types";
 
 const liens = [
@@ -12,8 +12,13 @@ const liens = [
   { href: "/app/chantiers", label: "Chantiers", icone: HardHat, roles: ["gerant", "bureau", "chef_equipe", "applicateur"] },
   { href: "/app/planning", label: "Planning", icone: CalendarDays, roles: ["gerant", "bureau", "chef_equipe", "applicateur"] },
   { href: "/app/equipe", label: "Équipe", icone: UserCog, roles: ["gerant", "bureau", "chef_equipe", "applicateur"] },
+  { href: "/app/heures", label: "Heures", icone: Clock, roles: ["gerant", "bureau", "chef_equipe"] },
+  { href: "/app/materiel", label: "Matériel", icone: Wrench, roles: ["gerant", "bureau", "chef_equipe", "applicateur"] },
+  { href: "/app/agenda", label: "Agenda", icone: CalendarClock, roles: ["gerant", "bureau", "chef_equipe"] },
   { href: "/app/clients", label: "Clients", icone: Users, roles: ["gerant", "bureau"] },
   { href: "/app/factures", label: "Factures", icone: Receipt, roles: ["gerant", "bureau"] },
+  { href: "/app/rentabilite", label: "Rentabilité", icone: TrendingUp, roles: ["gerant"] },
+  { href: "/app/documents", label: "Documents", icone: FolderLock, roles: ["gerant", "bureau"] },
   { href: "/app/parametres", label: "Paramètres", icone: Settings, roles: ["gerant", "bureau"] },
 ] as const;
 

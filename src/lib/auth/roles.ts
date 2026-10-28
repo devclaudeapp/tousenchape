@@ -19,6 +19,12 @@ export const DROITS: Record<string, RoleMembre[]> = {
   factures: ["gerant", "bureau"],
   parametres: ["gerant", "bureau"],
   ma_journee: ["chef_equipe", "applicateur", "gerant", "bureau"],
+  heures: ["gerant", "bureau", "chef_equipe"],
+  paie: ["gerant", "bureau"],
+  materiel: ["gerant", "bureau", "chef_equipe", "applicateur"],
+  rentabilite: ["gerant"],
+  agenda: ["gerant", "bureau", "chef_equipe"],
+  documents: ["gerant", "bureau"],
 };
 
 /** Redirige vers le tableau de bord si le rôle n'a pas accès au module. */

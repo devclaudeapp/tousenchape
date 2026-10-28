@@ -7,14 +7,18 @@ import type {
   Client,
   Controle,
   Devis,
+  DocumentEntreprise,
   Entreprise,
   Equipe,
   Facture,
   Indisponibilite,
   LivraisonBon,
+  Materiel,
   Membre,
   Message,
+  Pointage,
   Produit,
+  RendezVous,
 } from "@/lib/domain/types";
 import {
   DEMO_ENTREPRISE_ID,
@@ -31,6 +35,10 @@ import {
   demoMembres,
   demoMessages,
   demoProduits,
+  demoPointages,
+  demoMateriels,
+  demoRendezVous,
+  demoDocuments,
 } from "./demo-data";
 import { numeroSuivant, type DataStore } from "./store";
 
@@ -53,6 +61,10 @@ interface Etat {
   equipes: Equipe[];
   indisponibilites: Indisponibilite[];
   messages: Message[];
+  pointages: Pointage[];
+  materiels: Materiel[];
+  rendezVous: RendezVous[];
+  documents: DocumentEntreprise[];
 }
 
 const clone = <T>(x: T): T => structuredClone(x);
@@ -72,6 +84,10 @@ function etatInitial(): Etat {
     equipes: demoEquipes,
     indisponibilites: demoIndisponibilites,
     messages: demoMessages,
+    pointages: demoPointages,
+    materiels: demoMateriels,
+    rendezVous: demoRendezVous,
+    documents: demoDocuments,
   });
 }
 
@@ -85,7 +101,8 @@ function etat(): Etat {
   try {
     const stat = fs.statSync(FICHIER);
     if (!g.__tousenchapeDemo || g.__tousenchapeDemoMtime !== stat.mtimeMs) {
-      g.__tousenchapeDemo = JSON.parse(fs.readFileSync(FICHIER, "utf8")) as Etat;
+      const lu = JSON.parse(fs.readFileSync(FICHIER, "utf8")) as Partial<Etat>;
+      g.__tousenchapeDemo = { ...etatInitial(), ...lu } as Etat;
       g.__tousenchapeDemoMtime = stat.mtimeMs;
     }
   } catch {
@@ -200,6 +217,87 @@ export class MemoryStore implements DataStore {
   async enregistrerPhoto(dataUrl: string) {
     // En démo, la photo compressée reste inline.
     return dataUrl;
+  }
+
+  async pointages(filtre: { membreId?: string; chantierId?: string; depuis?: string; jusqua?: string } = {}) {
+    return clone(
+      etat().pointages.filter(
+        (p) => (!filtre.membreId || p.membreId === filtre.membreId) && (!filtre.chantierId || p.chantierId === filtre.chantierId) && (!filtre.depuis || p.date >= filtre.depuis) && (!filtre.jusqua || p.date <= filtre.jusqua),
+      ),
+    ).sort((a, b) => a.debut.localeCompare(b.debut));
+  }
+  async pointage(pid: string) {
+    return clone(etat().pointages.find((p) => p.id === pid) ?? null);
+  }
+  async creerPointage(data: Omit<Pointage, "id" | "entrepriseId" | "createdAt">) {
+    const p: Pointage = { ...data, id: id(), entrepriseId: this.entrepriseId, createdAt: maintenant() };
+    etat().pointages.push(p);
+    persister();
+    return clone(p);
+  }
+  async mettreAJourPointage(pid: string, patch: Partial<Pointage>) {
+    const e = etat();
+    const i = e.pointages.findIndex((p) => p.id === pid);
+    if (i < 0) throw new Error("Pointage introuvable.");
+    e.pointages[i] = { ...e.pointages[i]!, ...patch, id: pid };
+    persister();
+    return clone(e.pointages[i]!);
+  }
+
+  async materiels() {
+    return clone(etat().materiels);
+  }
+  async creerMateriel(data: Omit<Materiel, "id" | "entrepriseId">) {
+    const m: Materiel = { ...data, id: id(), entrepriseId: this.entrepriseId };
+    etat().materiels.push(m);
+    persister();
+    return clone(m);
+  }
+  async mettreAJourMateriel(mid: string, patch: Partial<Materiel>) {
+    const e = etat();
+    const i = e.materiels.findIndex((m) => m.id === mid);
+    if (i < 0) throw new Error("Matériel introuvable.");
+    e.materiels[i] = { ...e.materiels[i]!, ...patch, id: mid };
+    persister();
+    return clone(e.materiels[i]!);
+  }
+
+  async rendezVous() {
+    return clone(etat().rendezVous).sort((a, b) => `${a.date}${a.heure}`.localeCompare(`${b.date}${b.heure}`));
+  }
+  async creerRendezVous(data: Omit<RendezVous, "id" | "entrepriseId" | "createdAt">) {
+    const r: RendezVous = { ...data, id: id(), entrepriseId: this.entrepriseId, createdAt: maintenant() };
+    etat().rendezVous.push(r);
+    persister();
+    return clone(r);
+  }
+  async mettreAJourRendezVous(rid: string, patch: Partial<RendezVous>) {
+    const e = etat();
+    const i = e.rendezVous.findIndex((r) => r.id === rid);
+    if (i < 0) throw new Error("Rendez-vous introuvable.");
+    e.rendezVous[i] = { ...e.rendezVous[i]!, ...patch, id: rid };
+    persister();
+    return clone(e.rendezVous[i]!);
+  }
+  async supprimerRendezVous(rid: string) {
+    const e = etat();
+    e.rendezVous = e.rendezVous.filter((r) => r.id !== rid);
+    persister();
+  }
+
+  async documents() {
+    return clone(etat().documents);
+  }
+  async creerDocument(data: Omit<DocumentEntreprise, "id" | "entrepriseId" | "createdAt">) {
+    const d: DocumentEntreprise = { ...data, id: id(), entrepriseId: this.entrepriseId, createdAt: maintenant() };
+    etat().documents.push(d);
+    persister();
+    return clone(d);
+  }
+  async supprimerDocument(did: string) {
+    const e = etat();
+    e.documents = e.documents.filter((d) => d.id !== did);
+    persister();
   }
 
   async clients() {

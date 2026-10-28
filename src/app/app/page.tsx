@@ -14,7 +14,7 @@ export default async function TableauDeBord({ searchParams }: { searchParams: Pr
   const { refus } = await searchParams;
   const { session, store } = await getStore();
   if (estTerrain(session) && !refus) redirect("/app/ma-journee");
-  const [devis, chantiers, clients, factures, produits, membres, equipes, indisponibilites, messages] = await Promise.all([
+  const [devis, chantiers, clients, factures, produits, membres, equipes, indisponibilites, messages, materiels, documents, pointages] = await Promise.all([
     store.devisListe(),
     store.chantiers(),
     store.clients(),
@@ -24,8 +24,13 @@ export default async function TableauDeBord({ searchParams }: { searchParams: Pr
     store.equipes(),
     store.indisponibilites(),
     store.messages(),
+    store.materiels(),
+    store.documents(),
+    // Composant serveur rendu à chaque requête : l'heure courante y est stable.
+    // eslint-disable-next-line react-hooks/purity
+    store.pointages({ depuis: new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10) }),
   ]);
-  const alertes = calculerAlertes({ aujourdHui: new Date(), entreprise: session.entreprise, membres, equipes, chantiers, factures, indisponibilites, messages });
+  const alertes = calculerAlertes({ aujourdHui: new Date(), entreprise: session.entreprise, membres, equipes, chantiers, factures, indisponibilites, messages, materiels, documents, pointages });
   const iconeAlerte = { urgent: OctagonX, attention: AlertTriangle, info: Info } as const;
   const classeAlerte = { urgent: "text-rose-600", attention: "text-amber-600", info: "text-sky-600" } as const;
   const produit = (id?: string) => produits.find((p) => p.id === id) ?? null;
@@ -58,7 +63,7 @@ export default async function TableauDeBord({ searchParams }: { searchParams: Pr
       {alertes.length > 0 && (
         <Carte titre={`À traiter · ${alertes.filter((a) => a.niveau === "urgent").length} urgent${alertes.filter((a) => a.niveau === "urgent").length > 1 ? "s" : ""}, ${alertes.filter((a) => a.niveau !== "urgent").length} à surveiller`} classe="mb-6">
           <ul className="divide-y divide-stone-100">
-            {alertes.slice(0, 8).map((a) => {
+            {[...alertes.filter((a) => a.niveau === "urgent"), ...alertes.filter((a) => a.niveau !== "urgent").slice(0, 8)].map((a) => {
               const Icone = iconeAlerte[a.niveau];
               return (
                 <li key={a.code} className="flex items-start gap-3 py-2">
@@ -75,7 +80,7 @@ export default async function TableauDeBord({ searchParams }: { searchParams: Pr
               );
             })}
           </ul>
-          {alertes.length > 8 && <p className="mt-2 text-xs text-stone-500">{alertes.length - 8} autres alertes.</p>}
+          {alertes.filter((a) => a.niveau !== "urgent").length > 8 && <p className="mt-2 text-xs text-stone-500">{alertes.filter((a) => a.niveau !== "urgent").length - 8} autres points à surveiller dans Équipe, Matériel et Documents.</p>}
         </Carte>
       )}
 
