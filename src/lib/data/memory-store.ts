@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import type {
   Centrale,
   Chantier,
@@ -60,15 +63,40 @@ function etatInitial(): Etat {
   });
 }
 
-// En développement, Next recharge les modules : on garde l'état sur globalThis.
-const g = globalThis as unknown as { __tousenchapeDemo?: Etat };
+// L'état est gardé sur globalThis (Next recharge les modules en développement) et
+// recopié dans un fichier du dossier temporaire : il survit à un redémarrage du serveur
+// et reste partagé si plusieurs processus servent l'application.
+const FICHIER = path.join(os.tmpdir(), "tousenchape-demo.json");
+const g = globalThis as unknown as { __tousenchapeDemo?: Etat; __tousenchapeDemoMtime?: number };
+
 function etat(): Etat {
-  if (!g.__tousenchapeDemo) g.__tousenchapeDemo = etatInitial();
-  return g.__tousenchapeDemo;
+  try {
+    const stat = fs.statSync(FICHIER);
+    if (!g.__tousenchapeDemo || g.__tousenchapeDemoMtime !== stat.mtimeMs) {
+      g.__tousenchapeDemo = JSON.parse(fs.readFileSync(FICHIER, "utf8")) as Etat;
+      g.__tousenchapeDemoMtime = stat.mtimeMs;
+    }
+  } catch {
+    if (!g.__tousenchapeDemo) {
+      g.__tousenchapeDemo = etatInitial();
+      persister();
+    }
+  }
+  return g.__tousenchapeDemo!;
+}
+
+function persister(): void {
+  try {
+    fs.writeFileSync(FICHIER, JSON.stringify(g.__tousenchapeDemo));
+    g.__tousenchapeDemoMtime = fs.statSync(FICHIER).mtimeMs;
+  } catch {
+    // Système de fichiers en lecture seule : l'état reste en mémoire.
+  }
 }
 
 export function reinitialiserDemo(): void {
   g.__tousenchapeDemo = etatInitial();
+  persister();
 }
 
 const id = () => globalThis.crypto.randomUUID();
@@ -83,6 +111,7 @@ export class MemoryStore implements DataStore {
   async mettreAJourEntreprise(patch: Partial<Entreprise>) {
     const e = etat();
     e.entreprise = { ...e.entreprise, ...patch, id: e.entreprise.id };
+    persister();
     return clone(e.entreprise);
   }
   async membres() {
@@ -98,6 +127,7 @@ export class MemoryStore implements DataStore {
   async creerClient(data: Omit<Client, "id" | "entrepriseId" | "createdAt">) {
     const c: Client = { ...data, id: id(), entrepriseId: this.entrepriseId, createdAt: maintenant() };
     etat().clients.push(c);
+    persister();
     return clone(c);
   }
   async mettreAJourClient(cid: string, patch: Partial<Client>) {
@@ -105,6 +135,7 @@ export class MemoryStore implements DataStore {
     const i = e.clients.findIndex((c) => c.id === cid);
     if (i < 0) throw new Error("Client introuvable.");
     e.clients[i] = { ...e.clients[i]!, ...patch, id: cid };
+    persister();
     return clone(e.clients[i]!);
   }
 
@@ -114,6 +145,7 @@ export class MemoryStore implements DataStore {
   async creerCentrale(data: Omit<Centrale, "id" | "entrepriseId">) {
     const c: Centrale = { ...data, id: id(), entrepriseId: this.entrepriseId };
     etat().centrales.push(c);
+    persister();
     return clone(c);
   }
   async produits() {
@@ -141,6 +173,7 @@ export class MemoryStore implements DataStore {
       updatedAt: maintenant(),
     };
     e.devis.push(d);
+    persister();
     return clone(d);
   }
   async mettreAJourDevis(did: string, patch: Partial<Devis>) {
@@ -148,6 +181,7 @@ export class MemoryStore implements DataStore {
     const i = e.devis.findIndex((d) => d.id === did);
     if (i < 0) throw new Error("Devis introuvable.");
     e.devis[i] = { ...e.devis[i]!, ...patch, id: did, updatedAt: maintenant() };
+    persister();
     return clone(e.devis[i]!);
   }
 
@@ -168,6 +202,7 @@ export class MemoryStore implements DataStore {
       updatedAt: maintenant(),
     };
     e.chantiers.push(c);
+    persister();
     return clone(c);
   }
   async mettreAJourChantier(cid: string, patch: Partial<Chantier>) {
@@ -175,6 +210,7 @@ export class MemoryStore implements DataStore {
     const i = e.chantiers.findIndex((c) => c.id === cid);
     if (i < 0) throw new Error("Chantier introuvable.");
     e.chantiers[i] = { ...e.chantiers[i]!, ...patch, id: cid, updatedAt: maintenant() };
+    persister();
     return clone(e.chantiers[i]!);
   }
 
@@ -186,6 +222,7 @@ export class MemoryStore implements DataStore {
   async ajouterLivraison(data: Omit<LivraisonBon, "id" | "createdAt">) {
     const l: LivraisonBon = { ...data, id: id(), createdAt: maintenant() };
     etat().livraisons.push(l);
+    persister();
     return clone(l);
   }
   async controles(chantierId: string) {
@@ -194,6 +231,7 @@ export class MemoryStore implements DataStore {
   async ajouterControle(data: Omit<Controle, "id" | "createdAt">) {
     const c: Controle = { ...data, id: id(), createdAt: maintenant() };
     etat().controles.push(c);
+    persister();
     return clone(c);
   }
 
@@ -213,6 +251,7 @@ export class MemoryStore implements DataStore {
       createdAt: maintenant(),
     };
     e.factures.push(f);
+    persister();
     return clone(f);
   }
   async mettreAJourFacture(fid: string, patch: Partial<Facture>) {
@@ -223,6 +262,7 @@ export class MemoryStore implements DataStore {
       throw new Error("Une facture émise ne peut pas être modifiée : créez un avoir.");
     }
     e.factures[i] = { ...e.factures[i]!, ...patch, id: fid };
+    persister();
     return clone(e.factures[i]!);
   }
 }

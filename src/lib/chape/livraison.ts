@@ -38,7 +38,7 @@ export function controlerLivraison(livraison: Livraison, produit: ProduitChape):
       code: "etalement_hors_plage",
       severite: "attention",
       message: `Étalement de ${e} cm hors de la plage ${produit.etalementMinCm} à ${produit.etalementMaxCm} cm du produit ${produit.nom}.`,
-      reference: `Certificat QB46 ${produit.certificatQB46 ?? ""}`.trim(),
+      reference: produit.certificatQB46 ? `Certificat QB46 (${produit.certificatQB46})` : "Certificat QB46",
     });
   }
 
@@ -59,7 +59,7 @@ export function controlerLivraison(livraison: Livraison, produit: ProduitChape):
       code: "eau_excessive",
       severite: "bloquant",
       message: `${livraison.eauAjouteeLParM3} l/m³ d'eau ajoutée : maximum ${produit.eauMaxLParM3} l/m³ pour ${produit.nom}.`,
-      reference: `Certificat QB46 ${produit.certificatQB46 ?? ""}`.trim(),
+      reference: produit.certificatQB46 ? `Certificat QB46 (${produit.certificatQB46})` : "Certificat QB46",
     });
   }
 

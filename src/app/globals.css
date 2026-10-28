@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eefbf7;
+  --color-brand-100: #d5f5ea;
+  --color-brand-200: #aeead6;
+  --color-brand-300: #78d8bd;
+  --color-brand-400: #42bf9f;
+  --color-brand-500: #1fa386;
+  --color-brand-600: #13836d;
+  --color-brand-700: #116959;
+  --color-brand-800: #115448;
+  --color-brand-900: #10453c;
+
+  --color-sable-50: #faf8f4;
+  --color-sable-100: #f3efe7;
+  --color-sable-200: #e6dfd1;
+  --color-sable-300: #d3c8b2;
+  --color-sable-400: #bda990;
+  --color-sable-500: #a98f72;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-stone-50 text-stone-900 antialiased;
+}
+
+/* Champs de formulaire homogènes. */
+.champ {
+  @apply w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-xs placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-stone-100 disabled:text-stone-500;
+}
+
+.etiquette {
+  @apply mb-1 block text-xs font-medium uppercase tracking-wide text-stone-500;
+}
+
+@utility bouton {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 disabled:cursor-not-allowed disabled:opacity-50;
+}
+.bouton-primaire {
+  @apply bouton bg-brand-700 text-white hover:bg-brand-800;
+}
+.bouton-secondaire {
+  @apply bouton border border-stone-300 bg-white text-stone-800 hover:bg-stone-100;
+}
+.bouton-discret {
+  @apply bouton text-stone-700 hover:bg-stone-100;
+}
+
+.carte {
+  @apply rounded-lg border border-stone-200 bg-white shadow-xs;
+}
+
+.tableau {
+  @apply w-full text-sm;
+}
+.tableau th {
+  @apply border-b border-stone-200 bg-stone-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-stone-500;
+}
+.tableau td {
+  @apply border-b border-stone-100 px-3 py-2.5 align-top;
+}
+.tableau tr:last-child td {
+  @apply border-b-0;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
